@@ -1,0 +1,64 @@
+name: Portal checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.3-alpine
+        env:
+          POSTGRES_PASSWORD: ci_owner
+          POSTGRES_DB: portal_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://portal_app:ci_app@127.0.0.1:5432/portal_test
+      MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:ci_owner@127.0.0.1:5432/portal_test
+      TEST_DATABASE_ALLOWED: "true"
+      ALLOW_DEMO_SEED: "true"
+      DEMO_PASSWORD: DemoEscolar2026!
+      API_URL: http://127.0.0.1:8100
+      APP_ORIGIN: http://localhost:3100
+      INTEGRATION_API: "true"
+      PLAYWRIGHT_CHANNEL: chromium
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: pip install -r apps/api/requirements.txt
+      - name: Create runtime role
+        run: python -c "import os, psycopg; c=psycopg.connect(os.environ['MIGRATION_DATABASE_URL'].replace('postgresql+psycopg','postgresql'), autocommit=True); c.execute(\"CREATE ROLE portal_app LOGIN PASSWORD 'ci_app' NOSUPERUSER NOBYPASSRLS\"); c.close()"
+      - name: Migrate and test API
+        working-directory: apps/api
+        run: |
+          alembic upgrade head
+          pytest -q
+          alembic check
+      - name: Start API for integration tests
+        working-directory: apps/api
+        run: |
+          uvicorn app.main:app --host 127.0.0.1 --port 8100 > /tmp/siesco-api.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8100/health && exit 0; sleep 1; done
+          exit 1
+      - name: Frontend checks
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm test
+          npm run typecheck
+          npm run build
+      - name: Browser tests
+        working-directory: apps/web
+        run: |
+          npx playwright install --with-deps chromium
+          npm run start -- --hostname 127.0.0.1 > /tmp/siesco-web.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://localhost:3100 && break; sleep 1; done
+          npm run test:e2e

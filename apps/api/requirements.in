@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg[binary]
+alembic
+argon2-cffi
+email-validator
+pytest
+httpx
