@@ -2,7 +2,7 @@ from datetime import date
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 class Schema(BaseModel):
@@ -53,6 +53,39 @@ class ClassIn(PersonIn):
     grade_level: str = Field(min_length=2, max_length=60)
     shift: Literal["morning", "afternoon", "evening", "full"]
     capacity: int = Field(ge=1, le=100)
+    curriculum_id: UUID | None = None
+
+
+class DateRangeIn(PersonIn):
+    start_date: date
+    end_date: date
+
+    @model_validator(mode="after")
+    def ordered_dates(self):
+        if self.start_date > self.end_date:
+            raise ValueError("A data final deve ser igual ou posterior à data inicial.")
+        return self
+
+
+class AcademicYearIn(DateRangeIn):
+    year: int = Field(ge=2000, le=2100)
+
+
+class AcademicTermIn(DateRangeIn):
+    academic_year_id: UUID
+    sequence: int = Field(ge=1, le=24)
+
+
+class CurriculumIn(PersonIn):
+    code: str = Field(min_length=2, max_length=30, pattern=r"^[A-Z0-9_-]+$")
+    grade_level: str = Field(min_length=2, max_length=60)
+    version: int = Field(ge=1, le=999)
+
+
+class CurriculumSubjectIn(Schema):
+    curriculum_id: UUID
+    subject_id: UUID
+    workload_hours: int = Field(ge=1, le=3000)
 
 
 class LinkIn(Schema):
@@ -102,6 +135,22 @@ class SubjectOut(SubjectIn, RecordOut):
 
 
 class ClassOut(ClassIn, RecordOut):
+    pass
+
+
+class AcademicYearOut(AcademicYearIn, RecordOut):
+    needs_review: bool
+
+
+class AcademicTermOut(AcademicTermIn, RecordOut):
+    pass
+
+
+class CurriculumOut(CurriculumIn, RecordOut):
+    status: Literal["draft", "published"]
+
+
+class CurriculumSubjectOut(CurriculumSubjectIn, RecordOut):
     pass
 
 

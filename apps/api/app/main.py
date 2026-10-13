@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from . import models as m, schemas as s
 from .db import database, tenant_context
+from .domain import audit, create, find, scoped
+from .academic import router as academic_router, validate_class_curriculum
 from .security import (ACADEMIC_WRITERS, DUMMY_HASH, MANAGERS, PEOPLE_WRITERS, bearer,
                        current_user, hash_token, membership, password_hasher, permit,
                        require_platform, verify_password)
@@ -18,6 +20,7 @@ from .security import (ACADEMIC_WRITERS, DUMMY_HASH, MANAGERS, PEOPLE_WRITERS, b
 app = FastAPI(title="Siesco · Portal Escolar", version="0.1.0", description="API de demonstração. Dados sintéticos; revisão de segurança obrigatória antes de produção.")
 PREFIX = "/api/v1"
 TENANT = PREFIX + "/institutions/{institution_id}"
+app.include_router(academic_router)
 
 
 @app.middleware("http")
@@ -117,32 +120,6 @@ def create_institution(payload: s.InstitutionIn, user=Depends(require_platform),
     return institution
 
 
-def scoped(model, member):
-    return select(model).where(model.institution_id == member.institution_id, model.school_id == member.school_id)
-
-
-def find(db, model, item_id, member, lock=False):
-    statement = scoped(model, member).where(model.id == str(item_id))
-    item = db.scalar(statement.with_for_update() if lock else statement)
-    if not item:
-        raise HTTPException(404, "Registro não encontrado.")
-    return item
-
-
-def audit(db, member, action, item_id):
-    db.add(m.AuditEvent(institution_id=member.institution_id, school_id=member.school_id,
-                       actor_id=member.user_id, action=action, entity_id=item_id))
-
-
-def create(db, model, values, member):
-    item = model(**values, institution_id=member.institution_id, school_id=member.school_id)
-    db.add(item)
-    db.flush()
-    audit(db, member, model.__tablename__ + ".create", item.id)
-    db.flush()
-    return item
-
-
 def register_catalog(path, model, schema, output, writers):
     def list_items(member=Depends(membership), db: Session = Depends(database, scope="function"), offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100), q: str = Query("", max_length=100)):
         permit(member, MANAGERS)
@@ -158,12 +135,15 @@ def register_catalog(path, model, schema, output, writers):
             values["email"] = values["email"].lower()
         if "birth_date" in values:
             values["birth_date"] = payload.birth_date
+        if model is m.ClassGroup:
+            validate_class_curriculum(db, member, payload)
         return create(db, model, values, member)
 
     def update_item(item_id: UUID, payload: schema, member=Depends(membership), db: Session = Depends(database, scope="function")):
         permit(member, writers)
         item = find(db, model, item_id, member, lock=True)
         if model is m.ClassGroup:
+            validate_class_curriculum(db, member, payload, item)
             count = db.scalar(select(func.count()).select_from(m.Enrollment).where(m.Enrollment.class_id == item.id))
             if count and (item.academic_year != payload.academic_year or item.grade_level != payload.grade_level):
                 raise HTTPException(409, "Ano e etapa de uma turma com matrículas não podem ser alterados.")
@@ -171,6 +151,8 @@ def register_catalog(path, model, schema, output, writers):
             if payload.capacity < occupied:
                 raise HTTPException(409, "Capacidade menor que o número de matrículas ativas.")
         for key, value in payload.model_dump().items():
+            if isinstance(value, UUID):
+                value = str(value)
             setattr(item, key, value.lower() if key == "email" else value)
         audit(db, member, path + ".update", item.id)
         db.flush()
@@ -233,8 +215,12 @@ def assignments(member=Depends(membership), db: Session = Depends(database, scop
 @app.post(TENANT + "/assignments", response_model=s.AssignmentOut, status_code=201, tags=["Atribuições"])
 def create_assignment(payload: s.AssignmentIn, member=Depends(membership), db: Session = Depends(database, scope="function")):
     permit(member, ACADEMIC_WRITERS)
-    for model, identifier in [(m.ClassGroup, payload.class_id), (m.Subject, payload.subject_id), (m.Teacher, payload.teacher_id)]:
+    group = find(db, m.ClassGroup, payload.class_id, member, lock=True)
+    for model, identifier in [(m.Subject, payload.subject_id), (m.Teacher, payload.teacher_id)]:
         find(db, model, identifier, member)
+    if group.curriculum_id and not db.scalar(scoped(m.CurriculumSubject, member).where(
+            m.CurriculumSubject.curriculum_id == group.curriculum_id, m.CurriculumSubject.subject_id == str(payload.subject_id))):
+        raise HTTPException(422, "A disciplina não faz parte do currículo da turma.")
     return create(db, m.Assignment, payload.model_dump(mode="json"), member)
 
 

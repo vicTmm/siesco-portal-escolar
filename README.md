@@ -9,6 +9,7 @@ Primeira versão funcional para demonstração local, com FastAPI, Next.js/TypeS
 - Login com Argon2, sessão opaca revogável, logout, limite de tentativas e perfis verificados no servidor.
 - Administração da plataforma: cadastro de instituições com criação da escola principal e do primeiro diretor.
 - Alunos, responsáveis, professores, disciplinas e turmas: consulta, criação e edição.
+- Anos letivos e períodos com validação de datas; currículos versionados, matriz de disciplinas/cargas horárias e publicação protegida. Veja [organização acadêmica](docs/organizacao-academica.md).
 - Vínculos familiares verificáveis/revogáveis e atribuição de professor/disciplina à turma.
 - Matrículas: criação, prevenção de duplicidade, capacidade sob concorrência e cancelamento com preservação do registro.
 - Contas de acesso: criação pelo diretor, perfil e pessoa vinculada; revogação imediata do vínculo.
@@ -104,7 +105,7 @@ npm.cmd run test:e2e
 
 Alternativa com navegador de teste: `npx.cmd playwright install chromium` e `$env:PLAYWRIGHT_CHANNEL='chromium'`. Os testes E2E criam registros fictícios com identificadores únicos no banco da demonstração. Capturas ficam em `apps/web/test-results/`. O comando E2E não inicia servidores automaticamente. A integração contínua em `.github/workflows/ci.yml` prepara os serviços e executa as suítes.
 
-Os resultados realmente executados e as limitações da sessão estão em [docs/implementacao-v1.md](docs/implementacao-v1.md).
+Os resultados atuais estão em [docs/tracking.md](docs/tracking.md) e [docs/organizacao-academica.md](docs/organizacao-academica.md). O registro da primeira entrega permanece em [docs/implementacao-v1.md](docs/implementacao-v1.md).
 
 ## Desenvolvimento sem Docker
 

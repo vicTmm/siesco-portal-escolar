@@ -18,12 +18,12 @@ Status: **Pendente**, **Em andamento**, **Implementado**, **Validado**. Registra
 
 | ID | Prioridade | Entrega | Status | Observações / próximo passo |
 | --- | --- | --- | --- | --- |
-| BASE-01 | Base | Login, perfis, instituições, pessoas, disciplinas, turmas, vínculos, matrículas e dashboard | Implementado | Validações anteriores registradas em implementacao-v1.md; falta homologação completa no navegador. |
+| BASE-01 | Base | Login, perfis, instituições, pessoas, disciplinas, turmas, vínculos, matrículas e dashboard | Validado | Suítes de API e os seis fluxos originais de navegador aprovados com API real; homologação institucional continua antes do piloto. |
 | SITE-01 | Atual | Landing page sobre o SIESCO com destaque para acesso online | Validado | Rota pública /sobre, sem dependência da API; build e layout em quatro larguras aprovados. Publicação externa fica em OPS-01. |
 | SITE-02 | Atual | Navegação app → site → app | Validado | Fluxos site/login/site e menu/site verificados em navegador no build de produção, com sessões simuladas. |
-| QA-01 | Alta | Executar os seis cenários E2E existentes e revisar visualmente o app | Pendente | Cobrir desktop, móvel, permissões e fluxos integrados. Não confundir inspeção da landing com homologação do app. |
-| QA-02 | Alta | Validar build e execução do Docker Compose e CI no GitHub | Pendente | Configuração foi validada anteriormente; execução completa ainda não comprovada. |
-| ACA-01 | Alta | Calendário, ano letivo, períodos/bimestres e currículo | Pendente | Homologar regras da escola antes de implementar cálculos. |
+| QA-01 | Alta | Executar os seis cenários E2E existentes e revisar visualmente o app | Validado | Seis fluxos originais aprovados com API/PostgreSQL reais; revisão visual desktop/móvel. Novo fluxo acadêmico também aprovado. |
+| QA-02 | Alta | Validar build e execução do Docker Compose e CI no GitHub | Em andamento | CI anterior aprovada (run 38460130839); Docker local sem daemon, execução completa de containers permanece pendente. |
+| ACA-01 | Alta | Calendário, ano letivo, períodos/bimestres e currículo | Validado | Migração 0002, quatro cadastros, currículos publicados imutáveis e vínculo com turma. Ver organizacao-academica.md; datas importadas exigem revisão pela escola. |
 | ACA-02 | Alta | Diário de aulas e frequência | Pendente | Aulas, conteúdo, chamada, pendências e permissões docentes. |
 | ACA-03 | Alta | Avaliações, notas, médias e recuperação | Pendente | Definir escala, pesos, arredondamento e aprovação. |
 | ACA-04 | Alta | Fechamento, reabertura, publicação e boletim | Pendente | Famílias acessam somente resultados publicados; preservar versões e histórico. |
@@ -41,6 +41,22 @@ Status: **Pendente**, **Em andamento**, **Implementado**, **Validado**. Registra
 Financeiro, pagamentos, biblioteca, transporte, LMS e aplicativos nativos continuam fora do MVP; não são bloqueadores do escopo atual.
 
 ## Registro das entregas
+
+### 13/10/2026 — Organização acadêmica (ACA-01) e validação da base
+
+- Executados os seis E2E originais com login real, API e PostgreSQL: aprovados. Revisadas capturas desktop/móvel.
+- Confirmada CI do commit anterior aprovada no GitHub: run 38460130839. Docker Desktop sem daemon; QA-02 segue aberto para containers.
+- Implementados anos letivos, períodos, currículos versionados e matriz de disciplinas/cargas horárias, com telas e APIs.
+- Direção e coordenação podem alterar organização acadêmica; secretaria consulta. Professor, aluno e responsável não acessam esses cadastros administrativos.
+- Datas dos períodos devem estar dentro do ano letivo, sem sobreposição e na ordem da sequência. Operações concorrentes são serializadas por calendário.
+- Currículo exige ao menos uma disciplina para publicação; versão publicada e componentes ficam protegidos na API e no banco. Mudanças exigem uma nova versão.
+- Turmas exigem calendário cadastrado; podem vincular currículo publicado da mesma etapa. O vínculo não pode ser substituído e atribuições docentes respeitam a matriz.
+- Migração 0002 mantém registros existentes e cria calendários provisórios sinalizados para revisão. Currículo permanece opcional na transição.
+- Backend: 44 testes aprovados no PostgreSQL real, incluindo permissões, isolamento, concorrência, auditoria e proteções SQL.
+- Frontend/BFF: 13 testes aprovados, incluindo integração com API real. Build e TypeScript aprovados.
+- Novo cenário E2E aprovado: cadastro de calendário e períodos, rejeição de sobreposição, matriz, publicação e vínculo à turma; capturas desktop/móvel.
+- Downgrade/upgrade de 0002 testado exclusivamente em portal_test: alunos, turmas e matrículas preservados; alembic check sem divergências.
+- Próxima entrega: ACA-02, diário de aulas e frequência. Regras de médias, recuperação e aprovação continuam para homologação antes de ACA-03.
 
 ### 13/10/2026 — Tracking e apresentação do produto
 
@@ -60,4 +76,4 @@ Financeiro, pagamentos, biblioteca, transporte, LMS e aplicativos nativos contin
 - [Roadmap e critérios por etapa](roadmap.md)
 - [Módulos e permissões](modulos.md)
 
-Próxima sequência: validar a base atual → organização acadêmica → diário/frequência → avaliações/notas → boletim, com preparação operacional antes do piloto real.
+Próxima sequência: diário/frequência → avaliações/notas → boletim, com preparação operacional antes do piloto real. Base e organização acadêmica já passaram nas verificações técnicas acima.

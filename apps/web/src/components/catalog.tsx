@@ -38,7 +38,7 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
 
   function start(row: Row | null = null) {
     setEditing(row); setFormError("");
-    setValues(Object.fromEntries(config.fields.map(f => [f.key, row ? (typeof row[f.key] === "boolean" ? row[f.key] as boolean : String(row[f.key] ?? "")) : f.type === "checkbox" ? false : f.key === "academic_year" ? String(new Date().getFullYear()) : f.key === "capacity" ? "30" : ""])));
+    setValues(Object.fromEntries(config.fields.map(f => [f.key, row ? (typeof row[f.key] === "boolean" ? row[f.key] as boolean : String(row[f.key] ?? "")) : f.type === "checkbox" ? false : ["academic_year", "year"].includes(f.key) ? String(new Date().getFullYear()) : ["version", "sequence"].includes(f.key) ? "1" : f.key === "capacity" ? "30" : ""])));
     setOpen(true);
   }
 
@@ -47,6 +47,7 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
     const payload: Record<string, unknown> = {};
     for (const field of config.fields) {
       if (field.key === "person_id" && !["teacher", "student", "guardian"].includes(String(values.role))) continue;
+      if (field.key === "curriculum_id" && !field.required && !values[field.key]) { payload[field.key] = null; continue; }
       payload[field.key] = field.type === "number" ? Number(values[field.key]) : values[field.key];
     }
     try {
@@ -57,7 +58,7 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
   }
 
   async function revoke(row: Row) {
-    const action = resource === "enrollments" ? "Cancelar esta matrícula? O histórico será preservado." : "Revogar este acesso? A alteração será aplicada imediatamente.";
+    const action = resource === "enrollments" ? "Cancelar esta matrícula? O histórico será preservado." : resource === "curriculum-subjects" ? "Remover esta disciplina do currículo em rascunho?" : "Revogar este acesso? A alteração será aplicada imediatamente.";
     if (!window.confirm(action)) return;
     setSaving(true); setError("");
     try {
@@ -67,13 +68,26 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
     finally { setSaving(false); }
   }
 
+  function locked(row: Row) {
+    return row.status === "published" || (resource === "curriculum-subjects" && references.curricula?.find(c => c.id === row.curriculum_id)?.status === "published");
+  }
+
+  async function publish(row: Row) {
+    if (!window.confirm("Publicar este currículo? A versão e suas disciplinas ficarão protegidas contra alterações.")) return;
+    setSaving(true); setError("");
+    try { await api(`${path}/${row.id}/publish`, { method: "POST" }); setNotice("Currículo publicado. Para mudanças, cadastre uma nova versão."); setRevision(n => n + 1); }
+    catch (e) { setError(e instanceof Error ? e.message : "Erro ao publicar."); }
+    finally { setSaving(false); }
+  }
+
   function display(row: Row, key: string) {
     const value = row[key];
-    if (referenceSources[key]) return references[referenceSources[key]]?.find(r => r.id === value)?.name || "Registro indisponível";
-    if (key === "birth_date") return String(value).split("-").reverse().join("/");
+    if (referenceSources[key]) { const ref = references[referenceSources[key]]?.find(r => r.id === value); return !value ? "Não vinculado" : ref ? String(ref.name) + (referenceSources[key] === "curricula" ? ` · v${ref.version}` : "") : "Registro indisponível"; }
+    if (["birth_date", "start_date", "end_date"].includes(key)) return String(value).split("-").reverse().join("/");
     if (key === "role") return roles.find(r => r[0] === value)?.[1] || value;
     if (key === "shift") return shifts.find(r => r[0] === value)?.[1] || value;
-    if (key === "status") return value === "active" ? "Ativa" : "Cancelada";
+    if (key === "status") return ({ active: "Ativa", cancelled: "Cancelada", draft: "Rascunho", published: "Publicado" } as Record<string, string>)[String(value)] || value;
+    if (key === "needs_review") return value ? "Revisar datas importadas" : "Datas definidas";
     if (key === "verified") return value ? "Verificado" : "Sem acesso";
     return value || "—";
   }
@@ -85,7 +99,7 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
     {error && <div className="error" role="alert">{error} <Button variant="outline" size="sm" onClick={() => setRevision(n => n + 1)}>Tentar novamente</Button></div>}
     <section className="panel catalog-panel">
       <div className="table-toolbar"><div><h2>Todos os registros</h2><p>{canWrite ? "Consulte e organize os cadastros da instituição." : "Consulta disponível para seu perfil."}</p></div><label className="search"><Search size={17} /><input aria-label="Buscar nesta página" placeholder="Buscar nesta página…" value={search} onChange={e => setSearch(e.target.value)} /></label></div>
-      {loading ? <div className="skeleton-stack" role="status" aria-label="Carregando registros">{[1, 2, 3, 4].map(i => <div key={i} className="skeleton" />)}</div> : filtered.length ? <div className="table-scroll"><table><thead><tr>{config.columns.map(key => <th key={key}>{labels[key]}</th>)}{canWrite && <th>Ações</th>}</tr></thead><tbody>{filtered.map(row => <tr key={row.id}>{config.columns.map((key, index) => <td key={key}>{index === 0 && key === "name" ? <span className="table-person"><span className="mini-avatar">{String(row.name).slice(0, 1)}</span><strong>{display(row, key)}</strong></span> : ["status", "verified"].includes(key) ? <span className={`badge ${row[key] === "active" || row[key] === true ? "green" : "neutral"}`}>{display(row, key)}</span> : display(row, key)}</td>)}{canWrite && <td className="row-actions">{config.editable && <Button variant="ghost" size="sm" aria-label={`Editar ${row.name}`} onClick={() => start(row)}><Pencil size={15} />Editar</Button>}{["enrollments", "accounts", "guardian-links"].includes(resource) && <Button disabled={saving || row.status === "cancelled" || row.verified === false} variant="ghost" size="sm" onClick={() => revoke(row)}><XCircle size={15} />{resource === "enrollments" ? "Cancelar" : "Revogar"}</Button>}</td>}</tr>)}</tbody></table></div> : <div className="empty"><Users size={30} /><h3>{search ? "Nenhum resultado nesta página" : "Tudo pronto para começar"}</h3><p>{search ? "Experimente buscar por outro termo." : `Os cadastros de ${config.title.toLowerCase()} aparecerão aqui.`}</p>{canWrite && !search && <Button variant="outline" onClick={() => start()}>Criar primeiro cadastro</Button>}</div>}
+      {loading ? <div className="skeleton-stack" role="status" aria-label="Carregando registros">{[1, 2, 3, 4].map(i => <div key={i} className="skeleton" />)}</div> : filtered.length ? <div className="table-scroll"><table><thead><tr>{config.columns.map(key => <th key={key}>{labels[key]}</th>)}{canWrite && <th>Ações</th>}</tr></thead><tbody>{filtered.map(row => <tr key={row.id}>{config.columns.map((key, index) => <td key={key}>{index === 0 && key === "name" ? <span className="table-person"><span className="mini-avatar">{String(row.name).slice(0, 1)}</span><strong>{display(row, key)}</strong></span> : ["status", "verified"].includes(key) ? <span className={`badge ${["active", "published"].includes(String(row[key])) || row[key] === true ? "green" : "neutral"}`}>{display(row, key)}</span> : display(row, key)}</td>)}{canWrite && <td className="row-actions">{resource === "curricula" && row.status === "draft" && <Button disabled={saving} variant="ghost" size="sm" onClick={() => publish(row)}><CheckCircle2 size={15} />Publicar</Button>}{config.editable && !locked(row) && <Button variant="ghost" size="sm" aria-label={`Editar ${row.name || display(row, "subject_id")}`} onClick={() => start(row)}><Pencil size={15} />Editar</Button>}{["enrollments", "accounts", "guardian-links", "curriculum-subjects"].includes(resource) && <Button disabled={saving || locked(row) || row.status === "cancelled" || row.verified === false} variant="ghost" size="sm" onClick={() => revoke(row)}><XCircle size={15} />{resource === "enrollments" ? "Cancelar" : resource === "curriculum-subjects" ? "Remover" : "Revogar"}</Button>}</td>}</tr>)}</tbody></table></div> : <div className="empty"><Users size={30} /><h3>{search ? "Nenhum resultado nesta página" : "Tudo pronto para começar"}</h3><p>{search ? "Experimente buscar por outro termo." : `Os cadastros de ${config.title.toLowerCase()} aparecerão aqui.`}</p>{canWrite && !search && <Button variant="outline" onClick={() => start()}>Criar primeiro cadastro</Button>}</div>}
       <div className="table-footer"><span>Página {page + 1} · {filtered.length} registros exibidos</span><div><Button variant="ghost" size="sm" disabled={page === 0 || loading} onClick={() => { setPage(n => n - 1); setSearch(""); }}><ArrowLeft size={15} />Anterior</Button><Button variant="ghost" size="sm" disabled={rows.length < 50 || loading} onClick={() => { setPage(n => n + 1); setSearch(""); }}>Próxima<ArrowRight size={15} /></Button></div></div>
     </section>
     <Dialog open={open} onOpenChange={v => { if (!saving) setOpen(v); }}><DialogContent><DialogTitle className="dialog-title">{editing ? "Editar" : "Cadastrar"} {config.singular}</DialogTitle><DialogDescription className="dialog-description">Preencha os dados abaixo. Campos com * são obrigatórios.</DialogDescription>
@@ -93,8 +107,9 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
         let source = field.source;
         if (source === "dynamic") { source = ({ teacher: "teachers", student: "students", guardian: "guardians" } as Record<string, string>)[String(values.role)]; if (!source) return null; }
         const required = field.required || field.key === "person_id";
-        const options = source ? (references[source] || []).map(row => [row.id, String(row.name) + (source === "classes" ? ` · ${row.academic_year}` : "")]) : field.options;
-        return <label key={field.key} className={field.type === "checkbox" ? "checkbox-field" : "field"}>{field.type === "checkbox" ? <><input type="checkbox" checked={Boolean(values[field.key])} onChange={e => setValues(v => ({ ...v, [field.key]: e.target.checked }))} />{field.label}</> : <><span>{field.label}{required ? " *" : ""}</span>{options ? <select required={required} value={String(values[field.key] || "")} onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value, ...(field.key === "role" ? { person_id: "" } : {}) }))}><option value="">Selecione…</option>{options.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select> : <input type={field.type || "text"} required={required} value={String(values[field.key] || "")} min={field.type === "number" ? field.min : undefined} max={field.type === "number" ? field.max : field.type === "date" ? new Date().toISOString().slice(0, 10) : undefined} minLength={field.type !== "number" ? field.min : undefined} maxLength={field.type !== "number" ? field.max : undefined} autoComplete={field.type === "password" ? "new-password" : "off"} onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))} />}</>}</label>;
+        const available = source ? (references[source] || []).filter(row => source !== "curricula" || (resource === "classes" ? row.status === "published" : row.status === "draft")) : [];
+        const options = source ? available.map(row => [row.id, String(row.name) + (source === "classes" ? ` · ${row.academic_year}` : source === "curricula" ? ` · v${row.version}` : "")]) : field.options;
+        return <label key={field.key} className={field.type === "checkbox" ? "checkbox-field" : "field"}>{field.type === "checkbox" ? <><input type="checkbox" checked={Boolean(values[field.key])} onChange={e => setValues(v => ({ ...v, [field.key]: e.target.checked }))} />{field.label}</> : <><span>{field.label}{required ? " *" : ""}</span>{options ? <select required={required} value={String(values[field.key] || "")} onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value, ...(field.key === "role" ? { person_id: "" } : {}) }))}><option value="">Selecione…</option>{options.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select> : <input type={field.type || "text"} disabled={Boolean(editing) && ((resource === "academic-years" && field.key === "year") || (resource === "curricula" && ["code", "version"].includes(field.key)))} required={required} value={String(values[field.key] || "")} min={field.type === "number" ? field.min : undefined} max={field.type === "number" ? field.max : field.key === "birth_date" ? new Date().toISOString().slice(0, 10) : undefined} minLength={field.type !== "number" ? field.min : undefined} maxLength={field.type !== "number" ? field.max : undefined} autoComplete={field.type === "password" ? "new-password" : "off"} onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))} />}</>}</label>;
       })}{formError && <div className="error" role="alert">{formError}</div>}<div className="form-actions"><Button type="button" variant="outline" disabled={saving} onClick={() => setOpen(false)}>Cancelar</Button><Button type="submit" disabled={saving}>{saving ? "Salvando…" : "Salvar cadastro"}</Button></div></form>
     </DialogContent></Dialog>
   </>;

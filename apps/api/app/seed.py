@@ -31,6 +31,8 @@ def seed():
             db.add(school)
             db.flush()
             scope = {"institution_id": institution.id, "school_id": school.id}
+            db.add(m.AcademicYear(name="2026 · demonstração", year=2026, start_date=date(2026, 2, 2), end_date=date(2026, 12, 18), **scope))
+            db.flush()
             students = [m.Student(name=n + " (fictício)", birth_date=date(2014, 3, 12), **scope) for n in ["Ana Lima", "Bruno Reis", "Clara Souza", "Davi Costa"]]
             guardian = m.Guardian(name="Marina Lima (fictícia)", email=f"familia@{slug}.example.com", phone="", **scope)
             teacher = m.Teacher(name="Lucas Martins (fictício)", email=f"docente@{slug}.example.com", **scope)

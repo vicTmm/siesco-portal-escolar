@@ -112,6 +112,7 @@ def test_links_assignments_and_scoped_portals(client, context):
 
 def test_enrollment_duplicate_capacity_cancel(client, context):
     headers, base = context
+    assert client.post(base + "/academic-years", headers=headers, json={"name": "2027", "year": 2027, "start_date": "2027-02-01", "end_date": "2027-12-20"}).status_code == 201
     group = client.post(base + "/classes", headers=headers, json={"name": "Uma vaga", "academic_year": 2027, "grade_level": "7º ano", "shift": "morning", "capacity": 1}).json()
     students = client.get(base + "/students", headers=headers).json()
     payload = {"student_id": students[0]["id"], "class_id": group["id"]}
@@ -125,6 +126,7 @@ def test_enrollment_duplicate_capacity_cancel(client, context):
 
 def test_concurrent_enrollment_never_exceeds_capacity(client, context):
     headers, base = context
+    assert client.post(base + "/academic-years", headers=headers, json={"name": "2027", "year": 2027, "start_date": "2027-02-01", "end_date": "2027-12-20"}).status_code == 201
     group = client.post(base + "/classes", headers=headers, json={"name": "Concorrência", "academic_year": 2027, "grade_level": "7º ano", "shift": "morning", "capacity": 1}).json()
     students = client.get(base + "/students", headers=headers).json()
     def enroll(student):

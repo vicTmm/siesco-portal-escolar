@@ -120,6 +120,51 @@ class Subject(Scoped, Base):
     __table_args__ = (*scope_constraints(), UniqueConstraint("institution_id", "school_id", "code"))
 
 
+class AcademicYear(Scoped, Base):
+    __tablename__ = "academic_years"
+    name: Mapped[str] = mapped_column(String(160))
+    year: Mapped[int] = mapped_column(Integer)
+    start_date: Mapped[datetime] = mapped_column(Date)
+    end_date: Mapped[datetime] = mapped_column(Date)
+    needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
+    __table_args__ = (*scope_constraints(), UniqueConstraint("institution_id", "school_id", "year"),
+                     CheckConstraint("year BETWEEN 2000 AND 2100"), CheckConstraint("start_date <= end_date"))
+
+
+class AcademicTerm(Scoped, Base):
+    __tablename__ = "academic_terms"
+    name: Mapped[str] = mapped_column(String(160))
+    academic_year_id: Mapped[str] = mapped_column(String(36))
+    sequence: Mapped[int] = mapped_column(Integer)
+    start_date: Mapped[datetime] = mapped_column(Date)
+    end_date: Mapped[datetime] = mapped_column(Date)
+    __table_args__ = (*scope_constraints(), scoped_fk("academic_year_id", "academic_years"),
+                     UniqueConstraint("institution_id", "school_id", "academic_year_id", "sequence"),
+                     UniqueConstraint("institution_id", "school_id", "academic_year_id", "name"),
+                     CheckConstraint("sequence BETWEEN 1 AND 24"), CheckConstraint("start_date <= end_date"))
+
+
+class Curriculum(Scoped, Base):
+    __tablename__ = "curricula"
+    name: Mapped[str] = mapped_column(String(160))
+    code: Mapped[str] = mapped_column(String(30))
+    grade_level: Mapped[str] = mapped_column(String(60))
+    version: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    __table_args__ = (*scope_constraints(), UniqueConstraint("institution_id", "school_id", "code", "version"),
+                     CheckConstraint("version BETWEEN 1 AND 999"), CheckConstraint("status IN ('draft', 'published')"))
+
+
+class CurriculumSubject(Scoped, Base):
+    __tablename__ = "curriculum_subjects"
+    curriculum_id: Mapped[str] = mapped_column(String(36))
+    subject_id: Mapped[str] = mapped_column(String(36))
+    workload_hours: Mapped[int] = mapped_column(Integer)
+    __table_args__ = (*scope_constraints(), scoped_fk("curriculum_id", "curricula"), scoped_fk("subject_id", "subjects"),
+                     UniqueConstraint("institution_id", "school_id", "curriculum_id", "subject_id"),
+                     CheckConstraint("workload_hours BETWEEN 1 AND 3000"))
+
+
 class ClassGroup(Scoped, Base):
     __tablename__ = "classes"
     name: Mapped[str] = mapped_column(String(160))
@@ -127,7 +172,11 @@ class ClassGroup(Scoped, Base):
     grade_level: Mapped[str] = mapped_column(String(60))
     shift: Mapped[str] = mapped_column(String(20))
     capacity: Mapped[int] = mapped_column(Integer)
+    curriculum_id: Mapped[str | None] = mapped_column(String(36))
     __table_args__ = (*scope_constraints(), UniqueConstraint("institution_id", "school_id", "name", "academic_year"),
+                     ForeignKeyConstraint(["institution_id", "school_id", "academic_year"],
+                                          ["academic_years.institution_id", "academic_years.school_id", "academic_years.year"], name="fk_classes_academic_year"),
+                     scoped_fk("curriculum_id", "curricula"),
                      UniqueConstraint("institution_id", "school_id", "id", "academic_year"),
                      CheckConstraint("capacity BETWEEN 1 AND 100"), CheckConstraint("academic_year BETWEEN 2000 AND 2100"),
                      CheckConstraint("shift IN ('morning','afternoon','evening','full')"))
@@ -164,4 +213,4 @@ class AuditEvent(Scoped, Base):
     __table_args__ = scope_constraints()
 
 
-TENANT_TABLES = ["schools", "students", "guardians", "teachers", "guardian_links", "subjects", "classes", "assignments", "enrollments", "audit_events"]
+TENANT_TABLES = ["schools", "students", "guardians", "teachers", "guardian_links", "subjects", "academic_years", "academic_terms", "curricula", "curriculum_subjects", "classes", "assignments", "enrollments", "audit_events"]

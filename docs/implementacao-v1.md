@@ -1,5 +1,7 @@
 # Implementação v0.1
 
+Registro histórico da primeira entrega. Para o estado atual, consulte [tracking.md](tracking.md). Calendários, períodos e currículos foram entregues posteriormente em [organizacao-academica.md](organizacao-academica.md); os E2E e a CI inicial também já foram executados.
+
 Data: 13/10/2026. Este registro complementa a arquitetura proposta e descreve o que foi efetivamente implementado. Os seis documentos iniciais continuam como visão de evolução, não como afirmação de funcionalidades prontas.
 
 ## Escopo entregue
