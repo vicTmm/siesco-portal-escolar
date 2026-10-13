@@ -75,5 +75,6 @@ Financeiro, pagamentos, biblioteca, transporte, LMS e aplicativos nativos contin
 - [Implementação e verificações anteriores](implementacao-v1.md)
 - [Roadmap e critérios por etapa](roadmap.md)
 - [Módulos e permissões](modulos.md)
+- [Pesquisa de mercado e benchmarking de funcionalidades](pesquisa-features.md)
 
 Próxima sequência: diário/frequência → avaliações/notas → boletim, com preparação operacional antes do piloto real. Base e organização acadêmica já passaram nas verificações técnicas acima.

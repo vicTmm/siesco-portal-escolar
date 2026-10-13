@@ -155,3 +155,7 @@ No Linux/macOS, use `python3.14`, `.venv/bin/python` e `export NOME=valor`; remo
 Examine falhas de inicialização com `docker compose logs migrate seed api web`. Para parar preservando o banco: `docker compose down`. Volumes persistem; não remova volumes sem entender que isso elimina seus cadastros locais.
 
 Ao alterar models, crie uma **nova** migração. Não altere a migração `0001` já aplicada. Dependências estão fixadas em `requirements.txt` e `package-lock.json`; atualizações exigem repetir testes e build. Dados reais, recuperação de senha, OIDC/MFA, operação multiunidade, observabilidade e proteção de produção permanecem sujeitos às próximas etapas e à revisão de segurança.
+
+## Pesquisa e benchmarking
+
+- [Pesquisa Aprofundada: Funcionalidades, Inovações e Tendências em Apps de Gestão Escolar (2024–2026)](pesquisa_funcionalidades_apps_gestao_escolar.md)
