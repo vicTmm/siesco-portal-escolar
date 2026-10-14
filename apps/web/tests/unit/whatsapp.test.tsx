@@ -1,0 +1,33 @@
+import React from "react";
+import { describe, expect, it, afterEach } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { WhatsAppDemo } from "@/components/whatsapp";
+afterEach(cleanup);
+describe("Avisos demonstrativos", () => {
+  it("filtra turno e turma, exige confirmação e registra o resultado simulado", async () => {
+    const user = userEvent.setup();
+    render(<WhatsAppDemo school="Escola Aurora" />);
+    expect(screen.getByRole("heading", { name: "Responsáveis (350)" })).toBeVisible();
+    await user.selectOptions(screen.getByLabelText("Turno"), "Manhã");
+    expect(screen.getByRole("heading", { name: "Responsáveis (175)" })).toBeVisible();
+    await user.click(screen.getByRole("checkbox", { name: /^1º ano A/ }));
+    expect(screen.getByRole("heading", { name: "Responsáveis (35)" })).toBeVisible();
+    await user.click(screen.getAllByRole("checkbox", { name: /Autorizado/ })[0]);
+    expect(screen.getByRole("heading", { name: "Responsáveis (34)" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    const text = screen.getByLabelText("Texto do aviso");
+    await user.clear(text);
+    expect(screen.getByRole("button", { name: "Continuar" })).toBeDisabled();
+    await user.type(text, "Amanhã a entrada será às 8h.");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    expect(screen.getByRole("button", { name: "Simular envio" })).toBeDisabled();
+    await user.click(screen.getByRole("checkbox", { name: /Conferi a mensagem/ }));
+    await user.click(screen.getByRole("button", { name: "Simular envio" }));
+    expect(screen.getByRole("status")).toHaveTextContent("34 responsáveis fictícios");
+    expect(screen.getByRole("status")).toHaveTextContent(/1,19/);
+    expect(screen.getByRole("cell", { name: "Entregue · simulado" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Criar outro aviso" }));
+    expect(screen.getByRole("heading", { name: "Quem vai receber?" })).toBeVisible();
+  });
+});

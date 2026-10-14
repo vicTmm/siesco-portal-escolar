@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, BookOpen, Building2, ClipboardList, GraduationCap, LayoutDashboard, Link2, LogOut, Menu, School, ShieldCheck, Users, X } from "lucide-react";
+import { ArrowRight, BookOpen, Building2, ClipboardList, GraduationCap, LayoutDashboard, Link2, MessageCircle, LogOut, Menu, School, ShieldCheck, Users, X } from "lucide-react";
 import { api, type User } from "@/lib/api";
 import { roles } from "@/lib/catalogs";
 import { Button } from "./ui/button";
 import { CatalogView } from "./catalog";
 import { Dashboard } from "./dashboard";
+import { WhatsAppDemo } from "./whatsapp";
 
 const navigation = [
   { key: "dashboard", title: "Visão geral", icon: LayoutDashboard, group: "PRINCIPAL" },
@@ -22,6 +23,7 @@ const navigation = [
   { key: "classes", title: "Turmas", icon: School },
   { key: "assignments", title: "Atribuições docentes", icon: ClipboardList },
   { key: "enrollments", title: "Matrículas", icon: ClipboardList },
+  { key: "whatsapp", title: "Avisos por WhatsApp", icon: MessageCircle, group: "COMUNICAÇÃO" },
   { key: "accounts", title: "Contas e permissões", icon: ShieldCheck, group: "ADMINISTRAÇÃO" },
 ];
 
@@ -54,7 +56,7 @@ export function Portal() {
       <nav aria-label="Menu principal">{user.platform_admin ? <button onClick={() => navigate("institutions")} className="nav-link active"><Building2 size={18} />Instituições</button> : manager ? navigation.filter(n => n.key !== "accounts" || role === "director").map(item => <div key={item.key}>{item.group && <div className="nav-group">{item.group}</div>}<button aria-current={view === item.key ? "page" : undefined} className={`nav-link ${view === item.key ? "active" : ""}`} onClick={() => navigate(item.key)}><item.icon size={18} />{item.title}{view === item.key && <span className="active-dot" />}</button></div>) : <button className="nav-link active" onClick={() => navigate("portal")}><GraduationCap size={18} />Meu portal</button>}</nav><Link href="/sobre" className="site-link">Conheça o SIESCO <ArrowRight size={15} /></Link><div className="sidebar-footer"><span className="demo-dot" />Demonstração local<span>v0.1</span></div>
     </aside>
     <div className="workspace"><header className="topbar"><div className="breadcrumb"><button className="mobile-menu" aria-label="Abrir menu" onClick={() => setMobile(true)}><Menu size={22} /></button><span>Meu espaço</span><span>/</span><strong>{activeTitle}</strong></div><div className="topbar-user">{user.memberships.length > 1 && <select aria-label="Instituição ativa" value={tenant} onChange={e => { const selected = user.memberships.find(m => m.institution_id === e.target.value)!; setTenant(selected.institution_id); setView(["director", "coordinator", "secretary"].includes(selected.role) ? "dashboard" : "portal"); }} >{user.memberships.map(m => <option key={m.institution_id} value={m.institution_id}>{m.institution_name}</option>)}</select>}<span className="user-avatar">{user.name.slice(0, 1)}</span><div className="user-caption"><strong>{user.name}</strong><span>{roleName}</span></div><Button variant="ghost" size="icon" aria-label="Sair" onClick={logout}><LogOut size={18} /></Button></div></header>
-      <main id="main" className="main-content">{error && <div className="error" role="alert">{error}</div>}{view === "dashboard" && manager ? <Dashboard key={tenant} base={base} name={user.name} role={role} navigate={navigate} /> : view === "portal" ? <PersonalPortal key={tenant} base={base} name={user.name} /> : <CatalogView key={`${tenant}:${view}`} resource={view} base={base} role={role} expired={expired} />}</main>
+      <main id="main" className="main-content">{error && <div className="error" role="alert">{error}</div>}{view === "dashboard" && manager ? <Dashboard key={tenant} base={base} name={user.name} role={role} navigate={navigate} /> : view === "whatsapp" && manager ? <WhatsAppDemo key={tenant} school={member?.institution_name || "Escola demonstrativa"} /> : view === "portal" ? <PersonalPortal key={tenant} base={base} name={user.name} /> : <CatalogView key={`${tenant}:${view}`} resource={view} base={base} role={role} expired={expired} />}</main>
     </div></div>;
 }
 
