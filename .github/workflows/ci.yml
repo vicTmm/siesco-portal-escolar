@@ -62,3 +62,23 @@ jobs:
           npm run start -- --hostname 127.0.0.1 > /tmp/siesco-web.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://localhost:3100 && break; sleep 1; done
           npm run test:e2e
+
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose and start the full stack
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose up --build -d --wait --wait-timeout 180
+          curl --fail --retry 10 --retry-delay 2 http://localhost:8100/health
+          curl --fail --retry 10 --retry-delay 2 http://localhost:3100/ > /dev/null
+      - name: Test the containerized API
+        run: docker compose --profile test run --rm test
+      - name: Logs
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop containers
+        if: always()
+        run: docker compose down

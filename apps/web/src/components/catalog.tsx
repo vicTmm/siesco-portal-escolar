@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2, Pencil, Plus, Search, Users, XCircle } from "lucide-react";
+import { EnrollmentActions } from "./enrollment-actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { allRows, api, ApiError, type Row } from "@/lib/api";
@@ -16,6 +17,9 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
   const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const [query, setQuery] = useState("");
+  const serverSearch = ["students", "guardians", "teachers", "subjects", "classes", "academic-years", "academic-terms", "curricula", "institutions"].includes(resource);
+  useEffect(() => { const timer = setTimeout(() => { setQuery(search); setPage(0); }, 250); return () => clearTimeout(timer); }, [search]);
   const [revision, setRevision] = useState(0);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
@@ -29,12 +33,12 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
     setLoading(true); setError("");
     const sources = new Set(config.fields.filter(f => f.source && f.source !== "dynamic").map(f => f.source!));
     if (resource === "accounts") ["students", "teachers", "guardians"].forEach(s => sources.add(s));
-    Promise.all([api<Row[]>(`${path}?limit=50&offset=${page * 50}`), Promise.all([...sources].map(async s => [s, await allRows(`${base}/${s}`)] as const))])
+    Promise.all([api<Row[]>(`${path}?limit=50&offset=${page * 50}${serverSearch ? `&q=${encodeURIComponent(query)}` : ""}`), Promise.all([...sources].map(async s => [s, await allRows(`${base}/${s}`)] as const))])
       .then(([data, refs]) => { if (active) { setRows(data); setReferences(Object.fromEntries(refs)); } })
       .catch(e => { if (active) { setError(e.message); if (e instanceof ApiError && e.status === 401) expired(); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [path, page, revision, base, config, resource, expired]);
+  }, [path, page, revision, base, config, resource, expired, query, serverSearch]);
 
   function start(row: Row | null = null) {
     setEditing(row); setFormError("");
@@ -91,16 +95,16 @@ export function CatalogView({ resource, base, role, expired }: { resource: strin
     if (key === "verified") return value ? "Verificado" : "Sem acesso";
     return value || "—";
   }
-  const filtered = rows.filter(row => config.columns.some(key => String(display(row, key)).toLowerCase().includes(search.toLowerCase())));
+  const filtered = serverSearch ? rows : rows.filter(row => config.columns.some(key => String(display(row, key)).toLowerCase().includes(search.toLowerCase())));
 
   return <>
     <div className="page-heading"><div><div className="eyebrow">GESTÃO ESCOLAR</div><h1>{config.title}</h1><p>{config.description}</p></div>{canWrite && <Button onClick={() => start()}><Plus size={17} /> Cadastrar {config.singular}</Button>}</div>
     {notice && <div className="success" role="status"><CheckCircle2 size={18} />{notice}</div>}
     {error && <div className="error" role="alert">{error} <Button variant="outline" size="sm" onClick={() => setRevision(n => n + 1)}>Tentar novamente</Button></div>}
     <section className="panel catalog-panel">
-      <div className="table-toolbar"><div><h2>Todos os registros</h2><p>{canWrite ? "Consulte e organize os cadastros da instituição." : "Consulta disponível para seu perfil."}</p></div><label className="search"><Search size={17} /><input aria-label="Buscar nesta página" placeholder="Buscar nesta página…" value={search} onChange={e => setSearch(e.target.value)} /></label></div>
-      {loading ? <div className="skeleton-stack" role="status" aria-label="Carregando registros">{[1, 2, 3, 4].map(i => <div key={i} className="skeleton" />)}</div> : filtered.length ? <div className="table-scroll"><table><thead><tr>{config.columns.map(key => <th key={key}>{labels[key]}</th>)}{canWrite && <th>Ações</th>}</tr></thead><tbody>{filtered.map(row => <tr key={row.id}>{config.columns.map((key, index) => <td key={key}>{index === 0 && key === "name" ? <span className="table-person"><span className="mini-avatar">{String(row.name).slice(0, 1)}</span><strong>{display(row, key)}</strong></span> : ["status", "verified"].includes(key) ? <span className={`badge ${["active", "published"].includes(String(row[key])) || row[key] === true ? "green" : "neutral"}`}>{display(row, key)}</span> : display(row, key)}</td>)}{canWrite && <td className="row-actions">{resource === "curricula" && row.status === "draft" && <Button disabled={saving} variant="ghost" size="sm" onClick={() => publish(row)}><CheckCircle2 size={15} />Publicar</Button>}{config.editable && !locked(row) && <Button variant="ghost" size="sm" aria-label={`Editar ${row.name || display(row, "subject_id")}`} onClick={() => start(row)}><Pencil size={15} />Editar</Button>}{["enrollments", "accounts", "guardian-links", "curriculum-subjects"].includes(resource) && <Button disabled={saving || locked(row) || row.status === "cancelled" || row.verified === false} variant="ghost" size="sm" onClick={() => revoke(row)}><XCircle size={15} />{resource === "enrollments" ? "Cancelar" : resource === "curriculum-subjects" ? "Remover" : "Revogar"}</Button>}</td>}</tr>)}</tbody></table></div> : <div className="empty"><Users size={30} /><h3>{search ? "Nenhum resultado nesta página" : "Tudo pronto para começar"}</h3><p>{search ? "Experimente buscar por outro termo." : `Os cadastros de ${config.title.toLowerCase()} aparecerão aqui.`}</p>{canWrite && !search && <Button variant="outline" onClick={() => start()}>Criar primeiro cadastro</Button>}</div>}
-      <div className="table-footer"><span>Página {page + 1} · {filtered.length} registros exibidos</span><div><Button variant="ghost" size="sm" disabled={page === 0 || loading} onClick={() => { setPage(n => n - 1); setSearch(""); }}><ArrowLeft size={15} />Anterior</Button><Button variant="ghost" size="sm" disabled={rows.length < 50 || loading} onClick={() => { setPage(n => n + 1); setSearch(""); }}>Próxima<ArrowRight size={15} /></Button></div></div>
+      <div className="table-toolbar"><div><h2>Todos os registros</h2><p>{canWrite ? "Consulte e organize os cadastros da instituição." : "Consulta disponível para seu perfil."}</p></div><label className="search"><Search size={17} /><input aria-label={serverSearch ? "Buscar em todos os registros" : "Buscar nesta página"} placeholder={serverSearch ? "Buscar em todos os registros…" : "Buscar nesta página…"} value={search} onChange={e => setSearch(e.target.value)} /></label></div>
+      {loading ? <div className="skeleton-stack" role="status" aria-label="Carregando registros">{[1, 2, 3, 4].map(i => <div key={i} className="skeleton" />)}</div> : filtered.length ? <div className="table-scroll"><table><thead><tr>{config.columns.map(key => <th key={key}>{labels[key]}</th>)}{canWrite && <th>Ações</th>}</tr></thead><tbody>{filtered.map(row => <tr key={row.id}>{config.columns.map((key, index) => <td key={key}>{index === 0 && key === "name" ? <span className="table-person"><span className="mini-avatar">{String(row.name).slice(0, 1)}</span><strong>{display(row, key)}</strong></span> : ["status", "verified"].includes(key) ? <span className={`badge ${["active", "published"].includes(String(row[key])) || row[key] === true ? "green" : "neutral"}`}>{display(row, key)}</span> : display(row, key)}</td>)}{canWrite && <td className="row-actions">{resource === "enrollments" && <EnrollmentActions row={row} base={base} classes={references.classes || []} onDone={() => { setNotice("Movimentação registrada."); setRevision(n => n + 1); }} />}{resource === "accounts" && <Button disabled={saving} variant="ghost" size="sm" onClick={async () => { setSaving(true); setError(""); try { await api(`${path}/${row.id}/invite`, { method: "POST" }); setNotice("Convite enviado para o e-mail da conta."); } catch (e) { setError(e instanceof Error ? e.message : "Falha ao enviar convite."); } finally { setSaving(false); } }}>Enviar convite</Button>}{resource === "curricula" && row.status === "draft" && <Button disabled={saving} variant="ghost" size="sm" onClick={() => publish(row)}><CheckCircle2 size={15} />Publicar</Button>}{config.editable && !locked(row) && <Button variant="ghost" size="sm" aria-label={`Editar ${row.name || display(row, "subject_id")}`} onClick={() => start(row)}><Pencil size={15} />Editar</Button>}{["accounts", "guardian-links", "curriculum-subjects"].includes(resource) && <Button disabled={saving || locked(row) || row.status === "cancelled" || row.verified === false} variant="ghost" size="sm" onClick={() => revoke(row)}><XCircle size={15} />{resource === "enrollments" ? "Cancelar" : resource === "curriculum-subjects" ? "Remover" : "Revogar"}</Button>}</td>}</tr>)}</tbody></table></div> : <div className="empty"><Users size={30} /><h3>{search ? "Nenhum resultado nesta página" : "Tudo pronto para começar"}</h3><p>{search ? "Experimente buscar por outro termo." : `Os cadastros de ${config.title.toLowerCase()} aparecerão aqui.`}</p>{canWrite && !search && <Button variant="outline" onClick={() => start()}>Criar primeiro cadastro</Button>}</div>}
+      <div className="table-footer"><span>Página {page + 1} · {filtered.length} registros exibidos</span><div><Button variant="ghost" size="sm" disabled={page === 0 || loading} onClick={() => { setPage(n => n - 1); }}><ArrowLeft size={15} />Anterior</Button><Button variant="ghost" size="sm" disabled={rows.length < 50 || loading} onClick={() => { setPage(n => n + 1); }}>Próxima<ArrowRight size={15} /></Button></div></div>
     </section>
     <Dialog open={open} onOpenChange={v => { if (!saving) setOpen(v); }}><DialogContent><DialogTitle className="dialog-title">{editing ? "Editar" : "Cadastrar"} {config.singular}</DialogTitle><DialogDescription className="dialog-description">Preencha os dados abaixo. Campos com * são obrigatórios.</DialogDescription>
       <form onSubmit={submit} className="record-form">{config.fields.map(field => {

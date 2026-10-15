@@ -88,10 +88,12 @@ def validate_component(db, member, payload, existing=None):
 
 def register_academic(path, model, schema, output, validate):
     def list_items(member=Depends(membership), db: Session = Depends(database, scope="function"),
-                   offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100)):
+                   offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100), q: str = Query("", max_length=100)):
         permit(member, MANAGERS)
         order = [model.name, model.id] if hasattr(model, "name") else [model.id]
-        return db.scalars(scoped(model, member).order_by(*order).offset(offset).limit(limit)).all()
+        statement = scoped(model, member)
+        if q and hasattr(model, "name"): statement = statement.where(model.name.icontains(q, autoescape=True))
+        return db.scalars(statement.order_by(*order).offset(offset).limit(limit)).all()
 
     def create_item(payload: schema, member=Depends(membership), db: Session = Depends(database, scope="function")):
         permit(member, ACADEMIC_WRITERS)

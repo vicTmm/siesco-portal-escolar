@@ -4,3 +4,6 @@ export const metadata: Metadata = { title: "Siesco · Portal escolar", descripti
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return <html lang="pt-BR"><body>{children}</body></html>;
 }
+
+// Per-request script nonces require dynamic rendering.
+export const dynamic = "force-dynamic";

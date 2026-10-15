@@ -53,7 +53,10 @@ def seed(*, reset_passwords=False):
             db.flush()
             db.add(m.GuardianLink(student_id=students[0].id, guardian_id=guardian.id, relationship="Responsável legal", verified=True, **scope))
             for i, student in enumerate(students):
-                db.add(m.Enrollment(student_id=student.id, class_id=groups[i % 2].id, academic_year=2026, **scope))
+                enrollment = m.Enrollment(student_id=student.id, class_id=groups[i % 2].id, academic_year=2026, **scope)
+                db.add(enrollment)
+                db.flush()
+                db.add(m.Placement(enrollment_id=enrollment.id, class_id=enrollment.class_id, start_date=date(2026, 2, 2), **scope))
             db.add(m.Assignment(class_id=groups[0].id, subject_id=subjects[0].id, teacher_id=teacher.id, **scope))
             for role, label in [("director", "Direção"), ("coordinator", "Coordenação"), ("secretary", "Secretaria"), ("teacher", "Professor"), ("student", "Aluno"), ("guardian", "Responsável")]:
                 user = m.User(name=label + " · " + slug, email=f"{role}@{slug}.example.com", password_hash=hashed)

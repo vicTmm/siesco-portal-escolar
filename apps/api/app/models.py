@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, UniqueConstraint, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -35,6 +35,10 @@ class User(Identity, Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     platform_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    mfa_secret: Mapped[str | None] = mapped_column(String(255))
+    mfa_pending: Mapped[str | None] = mapped_column(String(255))
+    mfa_step: Mapped[int] = mapped_column(Integer, default=0)
+    mfa_recovery: Mapped[list] = mapped_column(JSON, default=list)
 
 
 class LoginSession(Identity, Base):
@@ -214,3 +218,153 @@ class AuditEvent(Scoped, Base):
 
 
 TENANT_TABLES = ["schools", "students", "guardians", "teachers", "guardian_links", "subjects", "academic_years", "academic_terms", "curricula", "curriculum_subjects", "classes", "assignments", "enrollments", "audit_events"]
+
+# Learning records use one locked journal per subject/class/term.
+from decimal import Decimal
+from sqlalchemy import Numeric, JSON
+
+
+class GradingPolicy(Scoped, Base):
+    __tablename__ = "grading_policies"
+    name: Mapped[str] = mapped_column(String(160))
+    method: Mapped[str] = mapped_column(String(20))
+    scale: Mapped[Decimal] = mapped_column(Numeric(8, 2))
+    passing: Mapped[Decimal] = mapped_column(Numeric(8, 2))
+    attendance_min: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+    decimals: Mapped[int] = mapped_column(Integer)
+    recovery: Mapped[str] = mapped_column(String(20))
+    concepts: Mapped[list] = mapped_column(JSON, default=list)
+    __table_args__ = (*scope_constraints(), CheckConstraint("method IN ('simple','weighted','points','concepts')"),
+                     CheckConstraint("scale > 0 AND passing >= 0 AND passing <= scale"),
+                     CheckConstraint("attendance_min BETWEEN 0 AND 100 AND decimals BETWEEN 0 AND 2"),
+                     CheckConstraint("recovery IN ('none','best','replace','average')"))
+
+
+class Journal(Scoped, Base):
+    __tablename__ = "journals"
+    assignment_id: Mapped[str] = mapped_column(String(36))
+    term_id: Mapped[str] = mapped_column(String(36))
+    policy_id: Mapped[str] = mapped_column(String(36))
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    __table_args__ = (*scope_constraints(), scoped_fk("assignment_id", "assignments"), scoped_fk("term_id", "academic_terms"),
+                     scoped_fk("policy_id", "grading_policies"), UniqueConstraint("institution_id", "school_id", "assignment_id", "term_id"),
+                     CheckConstraint("status IN ('draft','closed','published')"), CheckConstraint("version > 0"))
+
+
+class Lesson(Scoped, Base):
+    __tablename__ = "lessons"
+    journal_id: Mapped[str] = mapped_column(String(36))
+    date: Mapped[datetime] = mapped_column(Date)
+    slot: Mapped[int] = mapped_column(Integer)
+    content: Mapped[str] = mapped_column(String(2000))
+    cancelled: Mapped[bool] = mapped_column(Boolean, default=False)
+    __table_args__ = (*scope_constraints(), scoped_fk("journal_id", "journals"),
+                     UniqueConstraint("institution_id", "school_id", "journal_id", "date", "slot"), CheckConstraint("slot BETWEEN 1 AND 12"))
+
+
+class Attendance(Scoped, Base):
+    __tablename__ = "attendance"
+    lesson_id: Mapped[str] = mapped_column(String(36))
+    student_id: Mapped[str] = mapped_column(String(36))
+    status: Mapped[str] = mapped_column(String(20))
+    __table_args__ = (*scope_constraints(), scoped_fk("lesson_id", "lessons"), scoped_fk("student_id", "students"),
+                     UniqueConstraint("institution_id", "school_id", "lesson_id", "student_id"), CheckConstraint("status IN ('present','absent','excused')"))
+
+
+class Assessment(Scoped, Base):
+    __tablename__ = "assessments"
+    journal_id: Mapped[str] = mapped_column(String(36))
+    name: Mapped[str] = mapped_column(String(160))
+    date: Mapped[datetime] = mapped_column(Date)
+    maximum: Mapped[Decimal] = mapped_column(Numeric(8, 2))
+    weight: Mapped[Decimal] = mapped_column(Numeric(8, 2))
+    kind: Mapped[str] = mapped_column(String(20), default="regular")
+    __table_args__ = (*scope_constraints(), scoped_fk("journal_id", "journals"), CheckConstraint("maximum > 0 AND weight > 0"),
+                     CheckConstraint("kind IN ('regular','recovery')"))
+
+
+class Grade(Scoped, Base):
+    __tablename__ = "grades"
+    assessment_id: Mapped[str] = mapped_column(String(36))
+    student_id: Mapped[str] = mapped_column(String(36))
+    value: Mapped[Decimal | None] = mapped_column(Numeric(8, 2))
+    __table_args__ = (*scope_constraints(), scoped_fk("assessment_id", "assessments"), scoped_fk("student_id", "students"),
+                     UniqueConstraint("institution_id", "school_id", "assessment_id", "student_id"), CheckConstraint("value IS NULL OR value >= 0"))
+
+
+class Publication(Scoped, Base):
+    __tablename__ = "publications"
+    journal_id: Mapped[str] = mapped_column(String(36))
+    revision: Mapped[int] = mapped_column(Integer)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (*scope_constraints(), scoped_fk("journal_id", "journals"),
+                     UniqueConstraint("institution_id", "school_id", "journal_id", "revision"))
+
+
+class Placement(Scoped, Base):
+    __tablename__ = "placements"
+    enrollment_id: Mapped[str] = mapped_column(String(36))
+    class_id: Mapped[str] = mapped_column(String(36))
+    start_date: Mapped[datetime] = mapped_column(Date)
+    end_date: Mapped[datetime | None] = mapped_column(Date)  # Exclusive.
+    __table_args__ = (*scope_constraints(), scoped_fk("enrollment_id", "enrollments"), scoped_fk("class_id", "classes"),
+                     CheckConstraint("end_date IS NULL OR end_date > start_date"))
+
+
+class EnrollmentMovement(Scoped, Base):
+    __tablename__ = "enrollment_movements"
+    enrollment_id: Mapped[str] = mapped_column(String(36))
+    action: Mapped[str] = mapped_column(String(20))
+    reason: Mapped[str] = mapped_column(String(1000))
+    date: Mapped[datetime] = mapped_column(Date)
+    class_id: Mapped[str] = mapped_column(String(36))
+    __table_args__ = (*scope_constraints(), scoped_fk("enrollment_id", "enrollments"), scoped_fk("class_id", "classes"))
+
+
+class PasswordReset(Identity, Base):
+    __tablename__ = "password_resets"
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+TENANT_TABLES += ["grading_policies", "journals", "lessons", "attendance", "assessments", "grades", "publications", "placements", "enrollment_movements"]
+
+
+class JournalReopening(Scoped, Base):
+    __tablename__ = "journal_reopenings"
+    journal_id: Mapped[str] = mapped_column(String(36))
+    reason: Mapped[str] = mapped_column(String(1000))
+    actor_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (*scope_constraints(), scoped_fk("journal_id", "journals"))
+
+
+TENANT_TABLES += ['journal_reopenings']
+
+
+class AnnualPolicy(Scoped, Base):
+    __tablename__ = 'annual_policies'
+    academic_year_id: Mapped[str] = mapped_column(String(36))
+    policy_id: Mapped[str] = mapped_column(String(36))
+    name: Mapped[str] = mapped_column(String(160))
+    weights: Mapped[list] = mapped_column(JSON)
+    __table_args__ = (*scope_constraints(), scoped_fk('academic_year_id','academic_years'),scoped_fk('policy_id','grading_policies'),
+                     UniqueConstraint('institution_id','school_id','academic_year_id'))
+
+
+class AnnualPublication(Scoped, Base):
+    __tablename__ = 'annual_publications'
+    annual_policy_id: Mapped[str] = mapped_column(String(36))
+    student_id: Mapped[str] = mapped_column(String(36))
+    revision: Mapped[int] = mapped_column(Integer)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),default=lambda:datetime.now(timezone.utc))
+    __table_args__ = (*scope_constraints(),scoped_fk('annual_policy_id','annual_policies'),scoped_fk('student_id','students'),
+                     UniqueConstraint('institution_id','school_id','annual_policy_id','student_id','revision'))
+
+
+TENANT_TABLES += ['annual_policies','annual_publications']

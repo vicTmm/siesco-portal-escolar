@@ -13,6 +13,12 @@ from . import models as m, schemas as s
 from .db import database, tenant_context
 from .domain import audit, create, find, scoped
 from .academic import router as academic_router, validate_class_curriculum
+from .learning import router as learning_router
+from .movements import router as movements_router
+from .accounts import router as accounts_router
+from .management import router as management_router
+from .mfa import router as mfa_router, verify_mfa
+from .annual import router as annual_router
 from .security import (ACADEMIC_WRITERS, DUMMY_HASH, MANAGERS, PEOPLE_WRITERS, bearer,
                        current_user, hash_token, membership, password_hasher, permit,
                        require_platform, verify_password)
@@ -21,6 +27,12 @@ app = FastAPI(title="Siesco · Portal Escolar", version="0.1.0", description="AP
 PREFIX = "/api/v1"
 TENANT = PREFIX + "/institutions/{institution_id}"
 app.include_router(academic_router)
+app.include_router(learning_router)
+app.include_router(movements_router)
+app.include_router(accounts_router)
+app.include_router(management_router)
+app.include_router(mfa_router)
+app.include_router(annual_router)
 
 
 @app.middleware("http")
@@ -82,6 +94,10 @@ def login(payload: s.Login, db: Session = Depends(database, scope="function")):
         db.add(m.LoginAttempt(key=key))
         db.commit()  # Persistir a tentativa mesmo com a resposta 401.
         raise HTTPException(401, "E-mail ou senha inválidos.")
+    user = db.scalar(select(m.User).where(m.User.id == user.id).with_for_update().execution_options(populate_existing=True))
+    if not verify_mfa(user, payload.otp):
+        db.add(m.LoginAttempt(key=key)); db.commit()
+        raise HTTPException(401, "Informe um código válido do autenticador ou de recuperação.")
     token = token_urlsafe(48)
     db.add(m.LoginSession(token_hash=hash_token(token), user_id=user.id, expires_at=datetime.now(timezone.utc) + timedelta(hours=8)))
     return {"access_token": token, "token_type": "bearer", "expires_in": 28800}
@@ -100,8 +116,8 @@ def me(user=Depends(current_user), db: Session = Depends(database, scope="functi
 
 
 @app.get(PREFIX + "/platform/institutions", response_model=list[s.InstitutionOut], tags=["Plataforma"])
-def institutions(user=Depends(require_platform), db: Session = Depends(database, scope="function"), offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100)):
-    return db.scalars(select(m.Institution).order_by(m.Institution.name, m.Institution.id).offset(offset).limit(limit)).all()
+def institutions(user=Depends(require_platform), db: Session = Depends(database, scope="function"), offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100), q: str = Query("", max_length=100)):
+    return db.scalars(select(m.Institution).where(m.Institution.name.icontains(q, autoescape=True)).order_by(m.Institution.name, m.Institution.id).offset(offset).limit(limit)).all()
 
 
 @app.post(PREFIX + "/platform/institutions", response_model=s.InstitutionOut, status_code=201, tags=["Plataforma"])
@@ -241,17 +257,16 @@ def create_enrollment(payload: s.EnrollmentIn, member=Depends(membership), db: S
     existing = db.scalar(scoped(m.Enrollment, member).where(m.Enrollment.student_id == str(payload.student_id), m.Enrollment.academic_year == group.academic_year))
     if existing:
         raise HTTPException(409, "O aluno já possui matrícula neste ano letivo.")
-    return create(db, m.Enrollment, {**payload.model_dump(mode="json"), "academic_year": group.academic_year}, member)
+    item = create(db, m.Enrollment, {**payload.model_dump(mode="json"), "academic_year": group.academic_year}, member)
+    year = db.scalar(scoped(m.AcademicYear, member).where(m.AcademicYear.year == group.academic_year))
+    create(db, m.Placement, {"enrollment_id": item.id, "class_id": group.id, "start_date": year.start_date}, member)
+    return item
 
 
 @app.post(TENANT + "/enrollments/{item_id}/cancel", response_model=s.EnrollmentOut, tags=["Matrículas"])
 def cancel_enrollment(item_id: UUID, member=Depends(membership), db: Session = Depends(database, scope="function")):
     permit(member, PEOPLE_WRITERS)
-    item = find(db, m.Enrollment, item_id, member)
-    find(db, m.ClassGroup, item.class_id, member, lock=True)
-    item.status = "cancelled"
-    audit(db, member, "enrollments.cancel", item.id)
-    return item
+    raise HTTPException(422, "Informe motivo e data na ação Movimentar matrícula.")
 
 
 @app.get(TENANT + "/dashboard", response_model=s.DashboardOut, tags=["Dashboard"])
@@ -265,7 +280,7 @@ def dashboard(member=Depends(membership), db: Session = Depends(database, scope=
 
 
 @app.get(TENANT + "/portal", response_model=s.PortalOut, tags=["Portal por vínculo"])
-def portal(member=Depends(membership), db: Session = Depends(database, scope="function")):
+def portal(member=Depends(membership), db: Session = Depends(database, scope="function"), offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100), q: str = Query("", max_length=100)):
     permit(member, {"teacher", "student", "guardian"})
     students = scoped(m.Student, member)
     if member.role == "student":
@@ -274,9 +289,10 @@ def portal(member=Depends(membership), db: Session = Depends(database, scope="fu
         students = students.where(m.Student.id.in_(select(m.GuardianLink.student_id).where(m.GuardianLink.guardian_id == member.guardian_id, m.GuardianLink.verified.is_(True))))
     else:
         students = students.where(m.Student.id.in_(select(m.Enrollment.student_id).where(m.Enrollment.status == "active", m.Enrollment.class_id.in_(select(m.Assignment.class_id).where(m.Assignment.teacher_id == member.teacher_id)))))
-    records = db.scalars(students.order_by(m.Student.name).limit(100)).all()
+    if q: students = students.where(m.Student.name.icontains(q, autoescape=True))
+    records = db.scalars(students.order_by(m.Student.name, m.Student.id).offset(offset).limit(limit)).all()
     # DTO reduzido: não expõe nascimento, contatos ou relações familiares.
-    return {"students": [{"id": student.id, "name": student.name} for student in records], "message": "Notas e frequência serão disponibilizadas em uma próxima etapa."}
+    return {"students": [{"id": student.id, "name": student.name} for student in records], "message": "Selecione um aluno para consultar os resultados publicados pela escola."}
 
 
 @app.get(TENANT + "/accounts", response_model=list[s.AccountOut], tags=["Equipe e acesso"])
@@ -298,9 +314,13 @@ def create_account(payload: s.AccountIn, member=Depends(membership), db: Session
         links[payload.role + "_id"] = str(payload.person_id)
     elif payload.person_id:
         raise HTTPException(422, "Este perfil não utiliza vínculo de pessoa.")
-    user = m.User(name=payload.name, email=str(payload.email).lower(), password_hash=password_hasher.hash(payload.password))
-    db.add(user)
-    db.flush()
+    user = db.scalar(select(m.User).where(m.User.email == str(payload.email).lower()))
+    if not user:
+        user = m.User(name=payload.name, email=str(payload.email).lower(), password_hash=password_hasher.hash(payload.password))
+        db.add(user)
+        db.flush()
+    elif not user.active:
+        raise HTTPException(409, "Conta inativa; solicite revisão à administração.")
     account = m.Membership(user_id=user.id, institution_id=member.institution_id, school_id=member.school_id, role=payload.role, **links)
     db.add(account)
     db.flush()

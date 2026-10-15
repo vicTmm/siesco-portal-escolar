@@ -184,3 +184,21 @@ npm run dev
 ```
 
 Abra **http://localhost:3100**, com `director@aurora.example.com` e senha de demonstração `asd123`. O banco já recebeu as migrações e o seed; não é preciso recriá-lo. O erro “serviço indisponível” no login indica que o portal não conseguiu acessar a API em `127.0.0.1:8100`; apenas iniciar a interface não basta.
+
+
+## Novas rotinas pedagógicas e de acesso
+
+Veja [diário, avaliações e boletins](docs/diario-avaliacoes.md) para os modelos de avaliação, recuperação, fechamento/publicação, consolidação anual, movimentações, busca e relatórios. **Minha senha** reúne troca de senha e configuração do autenticador. **Esqueci minha senha** e **Enviar convite** usam SMTP ou caixa local de desenvolvimento.
+
+O ambiente local desta sessão tem chave MFA privada e modo de e-mail local em `.local/runtime.env`. Para reiniciar a API preservando essas configurações, na pasta `apps/api` execute:
+
+```bash
+set -a
+source ../../.local/runtime.env
+set +a
+../../.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8100
+```
+
+A caixa de e-mails de desenvolvimento fica em `.local/mail` na raiz; nenhum e-mail real é enviado nesse modo. Não versione esse diretório ou a chave. Em outros checkouts, gere uma chave própria e configure as variáveis documentadas.
+
+Publicação externa: [operação de produção](docs/operacao-producao.md), `compose.prod.yaml` e `infra/ops/`. Requer servidor/domínio/segredos/SMTP reais; não executar o seed de demonstração em produção. WhatsApp real segue adiado, mantendo o fluxo mock disponível.

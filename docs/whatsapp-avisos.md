@@ -25,3 +25,7 @@ Menu “Avisos por WhatsApp”, acessível aos gestores já habilitados no porta
 - Planejar atendimento às respostas dos pais, controle de acesso por instituição, proteção dos dados e trilha de auditoria.
 
 Política: https://whatsappbusiness.com/policy/ . Início: https://developers.facebook.com/docs/whatsapp/cloud-api/get-started .
+
+## Prioridade atualizada — 15/10/2026
+
+O usuário pediu para adiar a integração real da Meta e ser lembrado após a implementação das demais funcionalidades. Manter o mock; não provisionar conta, cadastrar modelos nem ativar envios reais nesta etapa.

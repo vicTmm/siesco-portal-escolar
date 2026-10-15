@@ -19,7 +19,8 @@ async function proxy(request: NextRequest, context: Context) {
   const token = jar.get(COOKIE)?.value;
   const endpoint = path.join("/");
   const isLogin = endpoint === "auth/login";
-  if (!isLogin && !token) return NextResponse.json({ error: { message: "Entre para continuar." } }, { status: 401 });
+  const publicAuth = ["auth/login", "auth/forgot-password", "auth/reset-password"].includes(endpoint);
+  if (!publicAuth && !token) return NextResponse.json({ error: { message: "Entre para continuar." } }, { status: 401 });
   const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.text();
   if (body && new TextEncoder().encode(body).length > 65536) return NextResponse.json({ error: { message: "Requisição muito grande." } }, { status: 413 });
   try {
@@ -32,7 +33,7 @@ async function proxy(request: NextRequest, context: Context) {
       status: upstream.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
     if (isLogin && upstream.ok) response.cookies.set(COOKIE, data.access_token, { httpOnly: true, secure: true, sameSite: "strict", path: "/", maxAge: data.expires_in });
-    if (upstream.status === 401 || (endpoint === "auth/logout" && upstream.ok)) response.cookies.set(COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+    if (upstream.status === 401 || (["auth/logout", "auth/change-password", "auth/reset-password"].includes(endpoint) && upstream.ok)) response.cookies.set(COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
     return response;
   } catch {
     return NextResponse.json({ error: { message: "O serviço está indisponível. Tente novamente em instantes." } }, { status: 503 });

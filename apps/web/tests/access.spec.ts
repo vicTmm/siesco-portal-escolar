@@ -1,0 +1,32 @@
+import { test, expect } from '@playwright/test';
+
+test('troca de senha encerra a sessão e permite novo login', async ({ page }) => {
+  const origin = new URL(process.env.E2E_URL || 'http://localhost:3100').origin;
+  await page.goto('/');
+  await page.getByLabel('E-mail', { exact: true }).fill('director@aurora.example.com');
+  await page.getByLabel('Senha', { exact: true }).fill(process.env.DEMO_PASSWORD!);
+  await page.getByRole('button', { name: 'Entrar no portal' }).click();
+  await expect(page.getByRole('button', { name: 'Sair', exact: true })).toBeVisible();
+  const me = await (await page.request.get('/api/backend/me')).json();
+  const email = `access${Date.now()}@example.com`;
+  const initial = 'SenhaInicialTeste2026!';
+  const next = 'SenhaAtualizadaTeste2026!';
+  const r = await page.request.post(`/api/backend/institutions/${me.memberships[0].institution_id}/accounts`, { headers: { Origin: origin }, data: { name: 'Conta teste acesso', email, password: initial, role: 'director' } });
+  expect(r.status(), await r.text()).toBe(201);
+  await page.getByRole('button', { name: 'Sair', exact: true }).click();
+  await page.getByLabel('E-mail', { exact: true }).fill(email);
+  await page.getByLabel('Senha', { exact: true }).fill(initial);
+  await page.getByRole('button', { name: 'Entrar no portal' }).click();
+  await expect(page.getByRole('heading', { name: 'Uma escola, muitas possibilidades.' })).toBeVisible();
+  await expect(page.locator('.stat-skeleton')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Minha senha' }).click();
+  await page.getByLabel('Senha atual', { exact: true }).fill(initial);
+  await page.getByLabel('Nova senha', { exact: true }).fill(next);
+  await page.getByLabel('Confirmar nova senha', { exact: true }).fill(next);
+  await page.getByRole('button', { name: 'Salvar senha', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Bem-vindo de volta.' })).toBeVisible();
+  await page.getByLabel('E-mail', { exact: true }).fill(email);
+  await page.getByLabel('Senha', { exact: true }).fill(next);
+  await page.getByRole('button', { name: 'Entrar no portal' }).click();
+  await expect(page.getByRole('button', { name: 'Sair', exact: true })).toBeVisible();
+});

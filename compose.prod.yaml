@@ -1,0 +1,70 @@
+name: siesco-production
+services:
+  db:
+    image: postgres:18.3-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: portal
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure um segredo de produção}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Configure um segredo de produção}
+    volumes:
+      - production_data:/var/lib/postgresql
+      - ./infra/init-db.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d portal"]
+      interval: 5s
+      retries: 20
+  migrate:
+    build: ./apps/api
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD}@db:5432/portal
+    command: [alembic, upgrade, head]
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    build: ./apps/api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://portal_app:${POSTGRES_APP_PASSWORD}@db:5432/portal
+      PUBLIC_APP_URL: https://${PORTAL_DOMAIN:?Configure o domínio}
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:?Configure a chave de proteção MFA}
+      REQUIRE_STAFF_MFA: "true"
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      retries: 10
+  web:
+    build: ./apps/web
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8000
+      APP_ORIGIN: https://${PORTAL_DOMAIN}
+    depends_on:
+      api:
+        condition: service_healthy
+  gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      PORTAL_DOMAIN: ${PORTAL_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Configure o e-mail operacional}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - gateway_config:/config
+    depends_on: [web]
+volumes:
+  production_data:
+  certificates:
+  gateway_config:

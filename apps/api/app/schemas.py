@@ -12,6 +12,7 @@ class Schema(BaseModel):
 class Login(Schema):
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)
+    otp: str = Field(default="", max_length=64)
 
 
 class PersonIn(Schema):

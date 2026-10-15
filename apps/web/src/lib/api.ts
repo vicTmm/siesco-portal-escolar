@@ -13,10 +13,10 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   }
   return data;
 }
-export async function allRows(path: string): Promise<Row[]> {
-  const result: Row[] = [];
+export async function allRows<T = Row>(path: string): Promise<T[]> {
+  const result: T[] = [];
   for (let offset = 0; ; offset += 100) {
-    const rows = await api<Row[]>(`${path}?limit=100&offset=${offset}`);
+    const rows = await api<T[]>(`${path}?limit=100&offset=${offset}`);
     result.push(...rows);
     if (rows.length < 100) return result;
   }
