@@ -42,6 +42,7 @@ test("mural: publicação, resposta familiar e confirmação; PDF e hash públic
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Sair", exact: true }).click();
+  await expect(page.getByLabel("E-mail", { exact: true })).toBeVisible();
   await login(page, "guardian@aurora.example.com");
   await navigate(page, "Mural e autorizações");
   const article = page
@@ -60,6 +61,7 @@ test("mural: publicação, resposta familiar e confirmação; PDF e hash públic
       s.name.startsWith("Ana Lima"),
     ) || portal.students[0];
   await page.getByRole("button", { name: "Sair", exact: true }).click();
+  await expect(page.getByLabel("E-mail", { exact: true })).toBeVisible();
   await login(page, "director@aurora.example.com");
   await navigate(page, "Documentos escolares");
   const enrollments = await (

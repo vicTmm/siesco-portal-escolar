@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - run: pip install -r apps/api/requirements.txt
       - name: Generate ephemeral encryption key
-        run: python -c "import os; from cryptography.fernet import Fernet; open(os.environ['GITHUB_ENV'], 'a').write('APP_ENCRYPTION_KEY=' + Fernet.generate_key().decode() + '\n')"
+        run: python -c "import os; from cryptography.fernet import Fernet; key=Fernet.generate_key().decode(); print('::add-mask::' + key); open(os.environ['GITHUB_ENV'], 'a').write('APP_ENCRYPTION_KEY=' + key + '\n')"
       - name: Create runtime role
         run: python -c "import os, psycopg; c=psycopg.connect(os.environ['MIGRATION_DATABASE_URL'].replace('postgresql+psycopg','postgresql'), autocommit=True); c.execute(\"CREATE ROLE portal_app LOGIN PASSWORD 'ci_app' NOSUPERUSER NOBYPASSRLS\"); c.close()"
       - name: Migrate and test API

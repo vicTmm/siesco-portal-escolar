@@ -72,6 +72,7 @@ test("carteira registra crédito, compra com estoque e consulta familiar", async
   ).json();
   expect(after.balance_cents).toBe(before.balance_cents + 500);
   await page.getByRole("button", { name: "Sair", exact: true }).click();
+  await expect(page.getByLabel("E-mail", { exact: true })).toBeVisible();
   await login("guardian@aurora.example.com");
   await page
     .getByRole("navigation")

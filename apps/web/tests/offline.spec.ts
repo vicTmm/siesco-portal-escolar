@@ -150,6 +150,7 @@ test("diário preparado funciona sem rede e sincroniza ao reconectar", async ({
   expect((await get(`journals/${journal.id}`)).lessons).toHaveLength(4);
   await page.goto("/");
   await page.getByRole("button", { name: "Sair", exact: true }).click();
+  await expect(page.getByLabel("E-mail", { exact: true })).toBeVisible();
   await page.goto("/offline");
   await expect(
     page.getByText(/Nenhum diário preparado\./),
