@@ -10,13 +10,24 @@ from .db import engine, tenant_context
 from .security import password_hasher
 
 
-def seed():
+def seed(*, reset_passwords=False):
     if os.environ.get("ALLOW_DEMO_SEED") != "true":
         raise RuntimeError("Defina ALLOW_DEMO_SEED=true apenas para demonstração local.")
     password = os.environ.get("DEMO_PASSWORD")
-    if not password or len(password) < 12:
-        raise RuntimeError("Defina DEMO_PASSWORD com pelo menos 12 caracteres.")
+    if not password or not 6 <= len(password) <= 128:
+        raise RuntimeError("Defina DEMO_PASSWORD com 6 a 128 caracteres (somente demonstração local).")
     with Session(engine) as db, db.begin():
+        if reset_passwords:
+            emails = ["admin@demo.example.com", *[
+                f"{role}@{slug}.example.com"
+                for slug in ("aurora", "horizonte")
+                for role in ("director", "coordinator", "secretary", "teacher", "student", "guardian")
+            ]]
+            users = db.scalars(select(m.User).where(m.User.email.in_(emails))).all()
+            for user in users:
+                user.password_hash = password_hasher.hash(password)
+            print(f"Senha atualizada em {len(users)} contas fictícias existentes.")
+            return
         if db.scalar(select(m.User).where(m.User.email == "admin@demo.example.com")):
             print("Demonstração já cadastrada; nenhum dado alterado.")
             return
@@ -42,7 +53,10 @@ def seed():
             db.flush()
             db.add(m.GuardianLink(student_id=students[0].id, guardian_id=guardian.id, relationship="Responsável legal", verified=True, **scope))
             for i, student in enumerate(students):
-                db.add(m.Enrollment(student_id=student.id, class_id=groups[i % 2].id, academic_year=2026, **scope))
+                enrollment = m.Enrollment(student_id=student.id, class_id=groups[i % 2].id, academic_year=2026, **scope)
+                db.add(enrollment)
+                db.flush()
+                db.add(m.Placement(enrollment_id=enrollment.id, class_id=enrollment.class_id, start_date=date(2026, 2, 2), **scope))
             db.add(m.Assignment(class_id=groups[0].id, subject_id=subjects[0].id, teacher_id=teacher.id, **scope))
             for role, label in [("director", "Direção"), ("coordinator", "Coordenação"), ("secretary", "Secretaria"), ("teacher", "Professor"), ("student", "Aluno"), ("guardian", "Responsável")]:
                 user = m.User(name=label + " · " + slug, email=f"{role}@{slug}.example.com", password_hash=hashed)
@@ -55,4 +69,7 @@ def seed():
 
 
 if __name__ == "__main__":
-    seed()
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--reset-passwords", action="store_true", help="Atualiza somente as senhas das contas fictícias existentes.")
+    seed(reset_passwords=parser.parse_args().reset_passwords)

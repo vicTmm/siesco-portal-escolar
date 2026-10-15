@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import os
 from hashlib import sha256
 
 from argon2 import PasswordHasher
@@ -40,6 +41,8 @@ def current_user(credentials: HTTPAuthorizationCredentials | None = Depends(bear
 def require_platform(user: User = Depends(current_user)):
     if not user.platform_admin:
         raise HTTPException(403, "Acesso restrito à administração da plataforma.")
+    if os.environ.get("REQUIRE_STAFF_MFA") == "true" and not user.mfa_secret:
+        raise HTTPException(403, "Configure a verificação em duas etapas em Minha senha.")
     return user
 
 
@@ -47,6 +50,8 @@ def membership(institution_id: str, user: User = Depends(current_user), db: Sess
     member = db.scalar(select(Membership).where(Membership.user_id == user.id, Membership.institution_id == institution_id))
     if not member:
         raise HTTPException(404, "Instituição não encontrada.")
+    if os.environ.get("REQUIRE_STAFF_MFA") == "true" and member.role in {"director", "coordinator", "secretary", "teacher"} and not user.mfa_secret:
+        raise HTTPException(403, "Configure a verificação em duas etapas em Minha senha.")
     tenant_context(db, institution_id)
     return member
 

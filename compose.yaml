@@ -39,6 +39,15 @@ services:
     build: ./apps/api
     environment:
       DATABASE_URL: postgresql+psycopg://portal_app:${POSTGRES_APP_PASSWORD}@db:5432/portal
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3100}
+      EMAIL_DELIVERY: ${EMAIL_DELIVERY:-local}
+      LOCAL_MAIL_DIR: /tmp/siesco-mail
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     ports:
       - "127.0.0.1:${API_PORT:-8100}:8000"
     depends_on:
@@ -59,6 +68,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
   test:
     build: ./apps/api
     profiles: ["test"]

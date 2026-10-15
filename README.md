@@ -50,7 +50,7 @@ As portas do Compose são publicadas apenas em loopback. As credenciais de `.env
 
 ## Contas de demonstração
 
-Senha inicial de todas as contas: valor de `DEMO_PASSWORD` no `.env`, por padrão `DemoEscolar2026!`.
+Senha inicial de todas as contas: valor de `DEMO_PASSWORD` no `.env`, por padrão `asd123`.
 
 | Perfil | Conta |
 | --- | --- |
@@ -67,7 +67,7 @@ Os outros cinco perfis também existem em `@horizonte.example.com`. Os domínios
 
 Roteiro: entre como diretor → cadastre aluno e responsável → verifique o vínculo familiar → cadastre professor e disciplina → crie turma e atribuição → faça a matrícula → confira o dashboard. Para testar outro perfil, saia e entre com a respectiva conta.
 
-O seed só executa com `ALLOW_DEMO_SEED=true` e uma `DEMO_PASSWORD` explícita. Rodá-lo novamente preserva os dados e senhas existentes. Não existe reset automático do banco.
+O seed só executa com `ALLOW_DEMO_SEED=true` e uma `DEMO_PASSWORD` explícita. Rodá-lo novamente preserva os dados e senhas existentes. Não existe reset automático do banco. Para aplicar a senha do `.env` às contas fictícias já existentes, execute `docker compose run --rm seed python -m app.seed --reset-passwords`. Esse comando altera somente as senhas das 13 contas de demonstração conhecidas; não remove cadastros. A senha curta é aceita apenas no seed local; contas criadas pelo portal continuam exigindo 12 caracteres.
 
 ## Testes
 
@@ -92,14 +92,14 @@ Linux/macOS: use `npm` no lugar de `npm.cmd`. Para incluir a integração BFF �
 
 ```powershell
 $env:INTEGRATION_API='true'
-$env:DEMO_PASSWORD='DemoEscolar2026!'
+$env:DEMO_PASSWORD='asd123'
 npm.cmd test
 ```
 
 Teste de ponta a ponta com o portal em http://localhost:3100 e Google Chrome instalado:
 
 ```powershell
-$env:DEMO_PASSWORD='DemoEscolar2026!'
+$env:DEMO_PASSWORD='asd123'
 npm.cmd run test:e2e
 ```
 
@@ -132,7 +132,7 @@ $env:MIGRATION_DATABASE_URL='postgresql+psycopg://postgres:SENHA_LOCAL@127.0.0.1
 ../../.venv/Scripts/python.exe -m alembic upgrade head
 Remove-Item Env:MIGRATION_DATABASE_URL
 $env:ALLOW_DEMO_SEED='true'
-$env:DEMO_PASSWORD='DemoEscolar2026!'
+$env:DEMO_PASSWORD='asd123'
 ../../.venv/Scripts/python.exe -m app.seed
 ../../.venv/Scripts/python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8100
 ```
@@ -159,3 +159,46 @@ Ao alterar models, crie uma **nova** migração. Não altere a migração `0001`
 ## Pesquisa e benchmarking
 
 - [Pesquisa Aprofundada: Funcionalidades, Inovações e Tendências em Apps de Gestão Escolar (2024–2026)](pesquisa_funcionalidades_apps_gestao_escolar.md)
+
+
+## Ambiente local preparado no macOS (sem Docker)
+
+Neste workspace, PostgreSQL 18 foi instalado via Homebrew e o banco de demonstração está em `.local/postgres`, na porta 5433. As dependências Python estão em `.venv`. Para reiniciar os serviços, execute na raiz do projeto:
+
+```bash
+/opt/homebrew/opt/postgresql@18/bin/pg_ctl -D .local/postgres -l .local/postgres.log -o '-h 127.0.0.1 -p 5433 -k /tmp' start
+```
+
+Em um terminal, inicie a API:
+
+```bash
+cd apps/api
+DATABASE_URL=postgresql+psycopg://portal_app:local_app@127.0.0.1:5433/portal ../../.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8100
+```
+
+Em outro, inicie a interface:
+
+```bash
+cd apps/web
+npm run dev
+```
+
+Abra **http://localhost:3100**, com `director@aurora.example.com` e senha de demonstração `asd123`. O banco já recebeu as migrações e o seed; não é preciso recriá-lo. O erro “serviço indisponível” no login indica que o portal não conseguiu acessar a API em `127.0.0.1:8100`; apenas iniciar a interface não basta.
+
+
+## Novas rotinas pedagógicas e de acesso
+
+Veja [diário, avaliações e boletins](docs/diario-avaliacoes.md) para os modelos de avaliação, recuperação, fechamento/publicação, consolidação anual, movimentações, busca e relatórios. **Minha senha** reúne troca de senha e configuração do autenticador. **Esqueci minha senha** e **Enviar convite** usam SMTP ou caixa local de desenvolvimento.
+
+O ambiente local desta sessão tem chave MFA privada e modo de e-mail local em `.local/runtime.env`. Para reiniciar a API preservando essas configurações, na pasta `apps/api` execute:
+
+```bash
+set -a
+source ../../.local/runtime.env
+set +a
+../../.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8100
+```
+
+A caixa de e-mails de desenvolvimento fica em `.local/mail` na raiz; nenhum e-mail real é enviado nesse modo. Não versione esse diretório ou a chave. Em outros checkouts, gere uma chave própria e configure as variáveis documentadas.
+
+Publicação externa: [operação de produção](docs/operacao-producao.md), `compose.prod.yaml` e `infra/ops/`. Requer servidor/domínio/segredos/SMTP reais; não executar o seed de demonstração em produção. WhatsApp real segue adiado, mantendo o fluxo mock disponível.

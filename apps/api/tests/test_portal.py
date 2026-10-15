@@ -120,7 +120,7 @@ def test_enrollment_duplicate_capacity_cancel(client, context):
     assert response.status_code == 201
     assert client.post(base + "/enrollments", headers=headers, json=payload).status_code == 409
     assert client.post(base + "/enrollments", headers=headers, json={**payload, "student_id": students[1]["id"]}).status_code == 409
-    assert client.post(base + "/enrollments/" + response.json()["id"] + "/cancel", headers=headers).json()["status"] == "cancelled"
+    assert client.post(base + "/enrollments/" + response.json()["id"] + "/move", headers=headers, json={"action": "cancel", "date": "2027-03-01", "reason": "Cancelamento solicitado pela família."}).json()["status"] == "cancelled"
     assert client.post(base + "/enrollments", headers=headers, json={**payload, "student_id": students[1]["id"]}).status_code == 201
 
 

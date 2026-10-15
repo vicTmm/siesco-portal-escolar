@@ -11,7 +11,7 @@ def scoped(model, member):
 
 def find(db, model, item_id, member, lock=False):
     statement = scoped(model, member).where(model.id == str(item_id))
-    item = db.scalar(statement.with_for_update() if lock else statement)
+    item = db.scalar(statement.with_for_update().execution_options(populate_existing=True) if lock else statement)
     if not item:
         raise HTTPException(404, "Registro não encontrado.")
     return item
