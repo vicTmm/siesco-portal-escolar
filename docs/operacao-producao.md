@@ -21,7 +21,7 @@ A interface e a API funcionam localmente. `compose.prod.yaml` prepara banco priv
 - `infra/ops/restore-drill.sh`: usa `RESTORE_DATABASE_URL` e `BACKUP_FILE`; recusa bancos diferentes de `portal_restore` ou com tabelas existentes. Não apaga dados. Criar antes o banco vazio com credencial de operação.
 - Incluir certificados/configurações, chave MFA e segredos no plano de recuperação, separados e protegidos; o dump do banco sozinho não restaura tudo.
 - Agendar execução externa (scheduler/cron do servidor), cópia criptografada fora do servidor, retenção e alertas após escolher infraestrutura. Esses serviços não estão ativos.
-- Ensaio realizado em 15/10/2026: dump do banco local e restauração transacional em `portal_restore`; versão 0004 e duas instituições recuperadas. O ensaio inicial foi antes de 0005; repetir em produção com versão e volume reais. Isso não comprova RPO/RTO de produção.
+- Ensaio realizado em 15/10/2026: dump do banco local e restauração transacional em `portal_restore`; versão 0005 e quatro instituições fictícias recuperadas. Contagens de contas, alunos, aulas, notas, publicações por período/anuais e alocações coincidiram com a origem; RLS permaneceu ativa sem contexto. Repetir em produção com volume e infraestrutura reais. Isso não comprova RPO/RTO de produção.
 
 ## Disponibilidade e incidentes
 

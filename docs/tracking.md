@@ -22,7 +22,7 @@ Status: **Pendente**, **Em andamento**, **Implementado**, **Validado**. Registra
 | SITE-01 | Atual | Landing page sobre o SIESCO com destaque para acesso online | Validado | Rota pública /sobre, sem dependência da API; build e layout em quatro larguras aprovados. Publicação externa fica em OPS-01. |
 | SITE-02 | Atual | Navegação app → site → app | Validado | Fluxos site/login/site e menu/site verificados em navegador no build de produção, com sessões simuladas. |
 | QA-01 | Alta | Executar os seis cenários E2E existentes e revisar visualmente o app | Validado | Seis fluxos originais aprovados com API/PostgreSQL reais; revisão visual desktop/móvel. Novo fluxo acadêmico também aprovado. |
-| QA-02 | Alta | Validar build e execução do Docker Compose e CI no GitHub | Em andamento | CI anterior aprovada (run 38460130839); Docker local sem daemon, execução completa de containers permanece pendente. |
+| QA-02 | Alta | Validar build e execução do Docker Compose e CI no GitHub | Validado | Runs 38676200687 e 38676205411 aprovadas: API/frontend/E2E e stack Docker completo com testes dentro do container. Prontidão web verificada por healthcheck. |
 | ACA-01 | Alta | Calendário, ano letivo, períodos/bimestres e currículo | Validado | Migração 0002, quatro cadastros, currículos publicados imutáveis e vínculo com turma. Ver organizacao-academica.md; datas importadas exigem revisão pela escola. |
 | ACA-02 | Alta | Diário de aulas e frequência | Validado | Aulas, chamada em lote, elegibilidade por data, cancelamento, versão concorrente e permissões docentes; testes PostgreSQL e navegador. |
 | ACA-03 | Alta | Avaliações, notas, médias e recuperação | Implementado | Modelos simples, ponderado, pontos e conceitos; escala, aprovação, frequência, recuperação e pesos anuais escolhidos pela escola. Fórmulas testadas; homologação institucional pendente. |
@@ -90,4 +90,6 @@ Próxima sequência: diário/frequência → avaliações/notas → boletim, com
 - Produção preparada com Compose/Caddy, MFA obrigatório para equipe, bootstrap sem seed, SMTP configurável e scripts de operação. Não foi feito deploy externo nem ativado monitoramento/SMTP real.
 - Limites explícitos: períodos/escala precisam de homologação; abono de frequência, equivalências externas, conselho de classe e documentos oficiais não são inferidos. Múltiplas unidades/perfis continuam ORG-01, conforme piloto.
 
-- Validação local final desta etapa: 56 testes backend, 14 frontend/BFF (incluindo API real), 9 E2E em build de produção; TypeScript/build e alembic check aprovados. Validação Docker/CI será registrada após execução no GitHub.
+- Validação local final desta etapa: 56 testes backend, 14 frontend/BFF (incluindo API real), 9 E2E em build de produção; TypeScript/build e alembic check aprovados. CI/Docker aprovadas no GitHub: runs 38676200687 (push) e 38676205411 (PR), com jobs verify e containers.
+
+- Ensaio final de restauração na versão 0005: contagens de instituições, contas, alunos, aulas, notas, publicações por período/anuais e alocações coincidiram com o banco de origem; papel runtime não revelou alunos sem contexto após restaurar.
