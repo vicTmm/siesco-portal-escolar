@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
-import { BookOpen, Plus, ArrowLeft, CheckCircle2, RefreshCw } from "lucide-react";
+import { Plus, ArrowLeft, CheckCircle2, RefreshCw } from "lucide-react";
 import { api, allRows } from "@/lib/api";
 import { Button } from "./ui/button";
+import { moduleIcons } from "@/lib/icons";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 
 type Option = { id: string; name: string };
@@ -66,7 +67,7 @@ export function LearningView({ base, role }: { base: string; role: string }) {
     {loading ? <div className="panel learning-body" role="status">Carregando diário…</div> : !selected ? <>
       <div className="learning-toolbar">{academic && <><Button onClick={() => open("journal")} disabled={!options.assignments.length || !options.terms.length || !options.policies.length}><Plus size={17} /> Abrir diário</Button><Button variant="outline" onClick={() => open("policy")}>Configurar regra de avaliação</Button></>}</div>
       {academic && (!options.terms.length || !options.assignments.length || !options.policies.length) && <p className="learning-note">Para abrir um diário, cadastre períodos letivos, atribuições docentes e uma regra de avaliação.</p>}
-      <section className="panel"><div className="panel-heading"><h2>Diários do período</h2></div><div className="portal-cards">{journals.map(j => <button className="portal-card learning-card" key={j.id} onClick={() => { setSelected(j.id); setTab("lessons"); }}><BookOpen size={24} /><strong>{j.name}</strong><span>{j.term}</span><span className="badge green">{statusNames[j.status]}</span></button>)}{!journals.length && <p className="learning-note">Nenhum diário aberto para seu acesso.</p>}</div></section>
+      <section className="panel"><div className="panel-heading"><h2>Diários do período</h2></div><div className="portal-cards">{journals.map(j => <button className="portal-card learning-card" key={j.id} onClick={() => { setSelected(j.id); setTab("lessons"); }}><moduleIcons.learning size={24} /><strong>{j.name}</strong><span>{j.term}</span><span className="badge green">{statusNames[j.status]}</span></button>)}{!journals.length && <p className="learning-note">Nenhum diário aberto para seu acesso.</p>}</div></section>
       <section className="panel learning-section"><div className="panel-heading"><h2>Regras escolhidas pela escola</h2></div><div className="portal-cards">{options.policies.map(p => <div className="portal-card" key={p.id}><strong>{p.name}</strong><span>{methodNames[p.method]} · escala {p.scale}</span><span>Mínimo: {p.passing} · frequência: {p.attendance_min}%</span><small>Regra preservada. Para mudanças, crie outra versão.</small></div>)}{!options.policies.length && <p className="learning-note">Escolha e revise uma regra antes dos primeiros lançamentos.</p>}</div></section>
     </> : detail && <>
       <div className="learning-toolbar"><Button variant="ghost" onClick={() => setSelected("")}><ArrowLeft size={16} /> Todos os diários</Button><span className="badge green">{statusNames[detail.status]}</span><span>{detail.policy.name} · versão {detail.version}</span></div>

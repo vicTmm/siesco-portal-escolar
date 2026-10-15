@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, GraduationCap, Globe2, Laptop, ShieldCheck, Smartphone, Users, BookOpen, ClipboardList } from "lucide-react";
+import { ArrowRight, Check, GraduationCap, Globe2, Laptop, ShieldCheck, Smartphone, Users, BookOpen, ClipboardList, School } from "lucide-react";
 import styles from "./site.module.css";
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default function AboutPage() {
           <div className={styles.preview}>
             <div className={styles.previewBar}><span><GraduationCap size={21} /> siesco</span><span className={styles.example}>VISÃO ILUSTRATIVA</span></div>
             <div className={styles.previewBody}><p>SEU ESPAÇO ESCOLAR</p><h2>Uma escola.<br />Muitas conexões.</h2>
-              <div className={styles.previewTiles}><div><Users size={22} /><strong>Pessoas</strong><span>Uma comunidade</span></div><div><BookOpen size={22} /><strong>Turmas</strong><span>Mais organização</span></div></div>
+              <div className={styles.previewTiles}><div><Users size={22} /><strong>Pessoas</strong><span>Uma comunidade</span></div><div><School size={22} /><strong>Turmas</strong><span>Mais organização</span></div></div>
               <div className={styles.previewRow}><span><Check size={16} /></span><div><strong>Informação no lugar certo</strong><p>Da secretaria à família.</p></div><ArrowRight size={17} /></div>
             </div>
           </div>

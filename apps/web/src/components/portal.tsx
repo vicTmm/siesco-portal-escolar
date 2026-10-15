@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, BookOpen, Building2, ClipboardList, GraduationCap, LayoutDashboard, Link2, MessageCircle, LogOut, Menu, School, ShieldCheck, Users, X } from "lucide-react";
+import { ArrowRight, BookOpen, Building2, GraduationCap, LogOut, Menu, School, ShieldCheck, X } from "lucide-react";
 import { api, type User } from "@/lib/api";
 import { roles } from "@/lib/catalogs";
+import { moduleIcons } from "@/lib/icons";
 import { Button } from "./ui/button";
 import { CatalogView } from "./catalog";
 import { Dashboard } from "./dashboard";
@@ -14,26 +15,26 @@ import { ManagementView } from "./management";
 import { AnnualView } from "./annual";
 
 const navigation = [
-  { key: "search", title: "Busca global", icon: Users, group: "PRINCIPAL" },
-  { key: "dashboard", title: "Visão geral", icon: LayoutDashboard },
-  { key: "students", title: "Alunos", icon: GraduationCap, group: "PESSOAS" },
-  { key: "guardians", title: "Responsáveis", icon: Users },
-  { key: "guardian-links", title: "Vínculos familiares", icon: Link2 },
-  { key: "teachers", title: "Professores", icon: Users },
-  { key: "academic-years", title: "Anos letivos", icon: BookOpen, group: "ACADÊMICO" },
-  { key: "academic-terms", title: "Períodos letivos", icon: ClipboardList },
-  { key: "subjects", title: "Disciplinas", icon: BookOpen },
-  { key: "curricula", title: "Currículos", icon: BookOpen },
-  { key: "curriculum-subjects", title: "Matriz curricular", icon: ClipboardList },
-  { key: "classes", title: "Turmas", icon: School },
-  { key: "assignments", title: "Atribuições docentes", icon: ClipboardList },
-  { key: "enrollments", title: "Matrículas", icon: ClipboardList },
-  { key: "learning", title: "Diário e avaliações", icon: BookOpen, group: "PEDAGÓGICO" },
-  { key: "annual", title: "Consolidação anual", icon: GraduationCap },
-  { key: "whatsapp", title: "Avisos por WhatsApp", icon: MessageCircle, group: "COMUNICAÇÃO" },
-  { key: "exports", title: "Relatórios", icon: ClipboardList, group: "SECRETARIA" },
-  { key: "audit", title: "Auditoria", icon: ShieldCheck, group: "ADMINISTRAÇÃO" },
-  { key: "accounts", title: "Contas e permissões", icon: ShieldCheck },
+  { key: "search", title: "Busca global", icon: moduleIcons["search"], group: "PRINCIPAL" },
+  { key: "dashboard", title: "Visão geral", icon: moduleIcons["dashboard"] },
+  { key: "students", title: "Alunos", icon: moduleIcons["students"], group: "PESSOAS" },
+  { key: "guardians", title: "Responsáveis", icon: moduleIcons["guardians"] },
+  { key: "guardian-links", title: "Vínculos familiares", icon: moduleIcons["guardian-links"] },
+  { key: "teachers", title: "Professores", icon: moduleIcons["teachers"] },
+  { key: "academic-years", title: "Anos letivos", icon: moduleIcons["academic-years"], group: "ACADÊMICO" },
+  { key: "academic-terms", title: "Períodos letivos", icon: moduleIcons["academic-terms"] },
+  { key: "subjects", title: "Disciplinas", icon: moduleIcons["subjects"] },
+  { key: "curricula", title: "Currículos", icon: moduleIcons["curricula"] },
+  { key: "curriculum-subjects", title: "Matriz curricular", icon: moduleIcons["curriculum-subjects"] },
+  { key: "classes", title: "Turmas", icon: moduleIcons["classes"] },
+  { key: "assignments", title: "Atribuições docentes", icon: moduleIcons["assignments"] },
+  { key: "enrollments", title: "Matrículas", icon: moduleIcons["enrollments"] },
+  { key: "learning", title: "Diário e avaliações", icon: moduleIcons["learning"], group: "PEDAGÓGICO" },
+  { key: "annual", title: "Consolidação anual", icon: moduleIcons["annual"] },
+  { key: "whatsapp", title: "Avisos por WhatsApp", icon: moduleIcons["whatsapp"], group: "COMUNICAÇÃO" },
+  { key: "exports", title: "Relatórios", icon: moduleIcons["exports"], group: "SECRETARIA" },
+  { key: "audit", title: "Auditoria", icon: moduleIcons["audit"], group: "ADMINISTRAÇÃO" },
+  { key: "accounts", title: "Contas e permissões", icon: moduleIcons["accounts"] },
 ];
 
 export function Portal() {
@@ -65,7 +66,7 @@ export function Portal() {
   const activeTitle = view === "password" ? "Minha senha" : view === "institutions" ? "Instituições" : view === "portal" ? "Meu portal" : navigation.find(n => n.key === view)?.title;
   return <div className="app-shell"><a href="#main" className="skip-link">Pular para conteúdo</a>{mobile && <button className="mobile-scrim" aria-label="Fechar menu" onClick={() => setMobile(false)} />}
     <aside className={`sidebar ${mobile ? "is-open" : ""}`}><div className="brand"><span className="brand-symbol"><GraduationCap size={24} /></span><div>siesco<span>PORTAL ESCOLAR</span></div><button className="mobile-close" aria-label="Fechar menu" onClick={() => setMobile(false)}><X size={20} /></button></div><div className="institution-label"><span className="school-symbol"><Building2 size={19} /></span><div><strong>{member?.institution_name || "Plataforma Siesco"}</strong><span>{member ? "Unidade principal" : "Gestão de instituições"}</span></div></div>
-      <nav aria-label="Menu principal">{user.platform_admin ? <button onClick={() => navigate("institutions")} className="nav-link active"><Building2 size={18} />Instituições</button> : manager ? navigation.filter(n => (!["accounts", "audit"].includes(n.key) || role === "director") && (n.key !== "exports" || role !== "coordinator")).map(item => <div key={item.key}>{item.group && <div className="nav-group">{item.group}</div>}<button aria-current={view === item.key ? "page" : undefined} className={`nav-link ${view === item.key ? "active" : ""}`} onClick={() => navigate(item.key)}><item.icon size={18} />{item.title}{view === item.key && <span className="active-dot" />}</button></div>) : <><button className={`nav-link ${view === "portal" ? "active" : ""}`} onClick={() => navigate("portal")}><GraduationCap size={18} />Meu portal</button>{role === "teacher" && <button className={`nav-link ${view === "learning" ? "active" : ""}`} onClick={() => navigate("learning")}><BookOpen size={18} />Diário e avaliações</button>}</>}</nav><Link href="/sobre" className="site-link">Conheça o SIESCO <ArrowRight size={15} /></Link><div className="sidebar-footer"><span className="demo-dot" />Demonstração local<span>v0.1</span></div>
+      <nav aria-label="Menu principal">{user.platform_admin ? <button onClick={() => navigate("institutions")} className="nav-link active"><Building2 size={18} />Instituições</button> : manager ? navigation.filter(n => (!["accounts", "audit"].includes(n.key) || role === "director") && (n.key !== "exports" || role !== "coordinator")).map(item => <div key={item.key}>{item.group && <div className="nav-group">{item.group}</div>}<button aria-current={view === item.key ? "page" : undefined} className={`nav-link ${view === item.key ? "active" : ""}`} onClick={() => navigate(item.key)}><item.icon size={18} />{item.title}{view === item.key && <span className="active-dot" />}</button></div>) : <><button className={`nav-link ${view === "portal" ? "active" : ""}`} onClick={() => navigate("portal")}><moduleIcons.portal size={18} />Meu portal</button>{role === "teacher" && <button className={`nav-link ${view === "learning" ? "active" : ""}`} onClick={() => navigate("learning")}><moduleIcons.learning size={18} />Diário e avaliações</button>}</>}</nav><Link href="/sobre" className="site-link">Conheça o SIESCO <ArrowRight size={15} /></Link><div className="sidebar-footer"><span className="demo-dot" />Demonstração local<span>v0.1</span></div>
     </aside>
     <div className="workspace"><header className="topbar"><div className="breadcrumb"><button className="mobile-menu" aria-label="Abrir menu" onClick={() => setMobile(true)}><Menu size={22} /></button><span>Meu espaço</span><span>/</span><strong>{activeTitle}</strong></div><div className="topbar-user">{user.memberships.length > 1 && <select aria-label="Instituição ativa" value={tenant} onChange={e => { const selected = user.memberships.find(m => m.institution_id === e.target.value)!; setTenant(selected.institution_id); setView(["director", "coordinator", "secretary"].includes(selected.role) ? "dashboard" : "portal"); }} >{user.memberships.map(m => <option key={m.institution_id} value={m.institution_id}>{m.institution_name}</option>)}</select>}<span className="user-avatar">{user.name.slice(0, 1)}</span><div className="user-caption"><strong>{user.name}</strong><span>{roleName}</span></div><Button variant="ghost" size="sm" onClick={() => navigate("password")}>Minha senha</Button><Button variant="ghost" size="icon" aria-label="Sair" onClick={logout}><LogOut size={18} /></Button></div></header>
       <main id="main" className="main-content">{error && <div className="error" role="alert">{error}</div>}{view === "annual" && manager ? <AnnualView key={tenant} base={base} role={role} /> : view === "password" ? <><AccessForm mode="change" onBack={() => navigate(user.platform_admin ? "institutions" : manager ? "dashboard" : "portal")} onChanged={expired} /><MfaSettings onChanged={expired} /></> : ["search", "audit", "exports"].includes(view) && manager ? <ManagementView key={`${tenant}:${view}`} base={base} mode={view as "search" | "audit" | "exports"} navigate={navigate} /> : view === "learning" && (manager || role === "teacher") ? <LearningView key={tenant} base={base} role={role} /> : view === "dashboard" && manager ? <Dashboard key={tenant} base={base} name={user.name} role={role} navigate={navigate} /> : view === "whatsapp" && manager ? <WhatsAppDemo key={tenant} school={member?.institution_name || "Escola demonstrativa"} /> : view === "portal" ? <PersonalPortal key={tenant} base={base} name={user.name} role={role} /> : <CatalogView key={`${tenant}:${view}`} resource={view} base={base} role={role} expired={expired} />}</main>
