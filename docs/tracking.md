@@ -101,3 +101,5 @@ Mural/autorizações/enquetes, PDFs verificáveis, unidades/perfis, agenda, serv
 - Complementos desta expansão: PWA/diário offline e revisão de conflitos; metas PEI, enfermaria e medicação; carteira, estoque e checkout; simulação/reestruturação de recebíveis; identificação/retirada QR e fila; expediente, calendário e notificações internas; provas/gabaritos separados e minutas sem assinatura.
 - Validação local: 81 testes da API, 15 frontend/BFF com API real e 12 E2E no build de produção; build/TypeScript e Alembic sem divergência. Offline E2E cobre perda de rede, versão concorrente, reautenticação com rascunhos preservados e limpeza no logout. PDFs de boletim, prova, gabarito e minuta renderizados e revisados.
 - Meta continua adiada. Integrações externas e funções avançadas remanescentes estão discriminadas na matriz de expansão; esta etapa não equivale à conclusão integral da pesquisa ou homologação de produção.
+
+- Ensaio de restauração da versão 0016 em banco dedicado `portal_restore`: contagens e conteúdo coincidiram nas 51 tabelas; papel runtime sem contexto não revelou alunos, avisos, documentos, serviços ou carteira. Banco de uso do portal preservado.
