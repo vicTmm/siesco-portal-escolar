@@ -261,7 +261,7 @@ MODULES = {
     ),
 }
 SENSITIVE = {"pei", "health", "pei_goals", "care_events", "medication"}
-PRIVATE_TYPES = SENSITIVE | {"pickup", "pickup_queue"}
+PRIVATE_TYPES = SENSITIVE | {"pickup", "pickup_queue", "psychology"}
 
 
 def sensitive_category(module):
@@ -625,7 +625,7 @@ def catalog(member=Depends(membership)):
             "transitions": TRANSITIONS[key],
         }
         for key, value in MODULES.items()
-        if key not in {"pickup", "pickup_queue"}
+        if key not in {"pickup", "pickup_queue", "transport"}
         if not (
             member.role == "coordinator" and key in {"agreements", "contract_templates"}
         )
@@ -1075,6 +1075,10 @@ def transition(
 
 def access_record(db, member, item_id):
     r = find(db, m.ServiceRecord, item_id, member)
+    if r.module == "psychology":
+        from .psychology import authorize
+        authorize(member, r)
+        return r
     allowed(db, member, r.module, r.student_id, False, r)
     if (
         member.role == "guardian"
@@ -1145,6 +1149,8 @@ def comment(
 ):
     permit(member, MANAGERS | {"teacher", "guardian"})
     r = access_record(db, member, item_id)
+    if r.module == "psychology":
+        raise HTTPException(405, "Use o acompanhamento de psicologia para acrescentar evolução.")
     if member.role == "teacher" and r.module not in TEACHER:
         raise HTTPException(403, "Comentários indisponíveis neste módulo.")
     if member.role == "guardian" and r.module not in FAMILY_CREATE | SENSITIVE:

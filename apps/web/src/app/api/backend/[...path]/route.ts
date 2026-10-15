@@ -27,7 +27,7 @@ async function proxy(request: NextRequest, context: Context) {
   try {
     const upstream = await fetch(`${API_URL}/api/v1/${endpoint}${request.nextUrl.search}`, {
       method: request.method, headers: { "Content-Type": "application/json", ...(request.headers.get("x-membership-id") ? {"X-Membership-Id":request.headers.get("x-membership-id")!}:{}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body, cache: "no-store", signal: AbortSignal.timeout(15000), redirect: "error",
+      body, cache: "no-store", signal: AbortSignal.timeout(/^institutions\/[a-zA-Z0-9_-]+\/fiscal\/invoices\/[a-zA-Z0-9_-]+\/(emit|reconcile)$/.test(endpoint) ? 70000 : 15000), redirect: "error",
     });
     const data = upstream.status === 204 ? null : await upstream.json();
     const response = new NextResponse(upstream.status === 204 ? null : JSON.stringify(isLogin && upstream.ok ? { ok: true } : data), {

@@ -8,7 +8,7 @@ Acesse http://localhost:3100. Contas locais: `director@aurora.example.com`, `sec
 
 1. **Mural**: escolha ano, turma/turno ou aluno; publique aviso, enquete ou autorização. Entre como responsável para confirmar leitura e responder. A direção acompanha recibos e decisões. Autorizações têm finalidade específica: geral, imagem, medicamento ou retirada. Confirmação de aluno/professor não substitui leitura do responsável.
 2. **Documentos**: emita declaração, frequência, boletim por período ou histórico anual publicado. Baixe o PDF, abra o QR e compare o arquivo na página pública. O hash é calculado no navegador. Minutas de contrato usam modelos publicados pela direção e dados de um responsável verificado; são identificadas como **sem assinatura**.
-3. **Serviços**: atendimento por setor, expediente, calendário, matrícula/rematrícula, CRM, planos, questões, PEI, saúde, biblioteca, transporte, financeiro, achados e perdidos, momentos e orientações. Cada serviço tem campos próprios, comentários, anexos, versões e transições permitidas.
+3. **Serviços**: atendimento por setor, expediente, calendário, matrícula/rematrícula, CRM, planos, questões, PEI, saúde, biblioteca, financeiro, achados e perdidos, momentos e orientações. Cada serviço tem campos próprios, comentários, anexos, versões e transições permitidas.
 4. **PEI e saúde**: a direção concede acesso por profissional/aluno/categoria. Cadastre metas com alvo, unidade, prazo e evolução; registre ocorrências de enfermaria. Medicação requer receita anexada e autorização específica vigente para agendar/registrar administração. Não há cálculo de dose nem prescrição pelo sistema.
 5. **Carteira e loja**: cadastre produtos, preço e estoque; registre crédito manual, consumo na cantina, compra familiar na loja, entrega ou estorno. A família consulta extrato e define limite diário e etiquetas bloqueadas. Saldo e estoque são conferidos na mesma transação; repetir a mesma operação não duplica o lançamento.
 6. **Portaria**: gere identificação escolar temporária; equipe confere presencialmente e registra entrada. Para terceiro, a família informa pessoa, vínculo, documento e autorização de retirada; o QR tem validade e uso único. A fila permite chegada manual ou conferência de proximidade por localização consentida; a liberação continua sendo presencial.
@@ -29,8 +29,8 @@ Acesse http://localhost:3100. Contas locais: `director@aurora.example.com`, `sec
 | PEI | Plano, metas estruturadas, progresso numérico/evidências, publicação e concessões de acesso | Sem perfil próprio de terapeuta externo; profissionais usam perfis existentes com concessão explícita |
 | Saúde | Ficha, enfermaria e medicação com receita/autorização vigente | Registro informado pela escola; sem prescrição, cálculo de dose ou integração clínica |
 | Biblioteca | Exemplares, reserva, empréstimo, devolução/extravio e lembretes internos | Sem entrega de e-mail/push; exemplar não pode ter dois empréstimos/reservas ativos |
-| Transporte | Rotas e registros manuais de embarque/desembarque | Sem GPS contínuo ou aplicativo de motorista |
-| Financeiro | Recebíveis, baixa manual, lembretes internos e negociação com simulação exata de parcelas | Simulação sem juros; aprovação substitui recebíveis pendentes uma vez. Sem gateway, conciliação ou cobrança externa |
+| Transporte | Retirado do escopo a pedido do usuário; opção ocultada | Histórico preservado; não é pendência |
+| Financeiro | Recebíveis, baixa manual, lembretes internos e negociação com simulação exata de parcelas | Simulação sem juros; aprovação substitui recebíveis pendentes uma vez. Cobrança de mensalidades permanece no Isaac; gateway e juros retirados do escopo |
 | Cantina/carteira | Crédito manual, extrato, limite diário, bloqueio por etiquetas, consumo e estorno de compra | Sem recarga por Pix/cartão; restrições são configuradas explicitamente, sem inferir alergias da ficha médica |
 | Loja/eventos | Catálogo, estoque, checkout pelo saldo interno, pedidos, entrega e estorno | Sem pagamento externo, frete ou gestão fiscal |
 | Portaria | Identificação temporária, entrada registrada, retirada com documento/autorização e QR único; fila com proximidade | Conferência humana obrigatória; sem catraca, biometria, câmera ou rastreamento em segundo plano |
@@ -56,12 +56,16 @@ Acesse http://localhost:3100. Contas locais: `director@aurora.example.com`, `sec
 
 ## Pendências que continuam abertas
 
-**Integrações externas:** WhatsApp oficial/Meta (adiado pelo usuário; retomar após esta etapa), hospedagem/domínio e SMTP de produção, push/SMS, Pix/boleto/cartão e conciliação, assinatura eletrônica, IA/RAG, OCR, Educacenso em layout homologado e hardware de acesso. Nenhuma delas foi ativada nesta entrega.
+**Integrações externas:** WhatsApp oficial/Meta (adiado pelo usuário; retomar após esta etapa), hospedagem/domínio e SMTP de produção, push/SMS, assinatura eletrônica, IA/RAG, OCR, Educacenso em layout homologado e hardware de acesso. Nenhuma delas foi ativada nesta entrega.
 
-**Desenvolvimento adicional:** otimização avançada de grade, inscrição pública de novos alunos, vídeos/álbuns coletivos, perfil dedicado a terapeutas, modelos de juros/encargos de negociação, importação licenciada de questões, aplicativo de motorista com rastreamento contínuo e automações externas. Essas funções não se resumem a informar credenciais.
+**Desenvolvimento adicional:** otimização avançada de grade, inscrição pública de novos alunos, vídeos/álbuns coletivos, importação licenciada de questões e automações externas. Essas funções não se resumem a informar credenciais.
 
 **Homologação:** regras e documentos da escola, permissões, retenção/LGPD, restauração da versão atual, carga/concorrência operacional e segurança independente antes de uso real. A entrega é demonstrável localmente; não houve publicação externa ou homologação de produção.
 
 ## Verificação
 
 Validação local: **81 testes API, 16 frontend/BFF e 12 E2E** aprovados; build, TypeScript e Alembic sem divergências. Backup/restauração da versão 0016 conferiu conteúdo e contagens das 51 tabelas, além de RLS sem contexto. As evidências ficam no tracking e no [PR #3](https://github.com/vicTmm/siesco-portal-escolar/pull/3). Cobertura inclui isolamento entre instituições/unidades, revogação de vínculos/perfis, acesso clínico, consentimentos, imutabilidade, conflitos de versão, reserva duplicada, sincronização idempotente, compras/estornos, retirada única, negociação e separação de prova/gabarito. PDFs e telas têm conferência visual local.
+
+## Escopo atualizado: psicologia, Isaac e NFS-e
+
+Psicologia escolar com perfil próprio e consulta restrita ao autor/direção implementada. Cobranças pelo Isaac, transporte e juros retirados das pendências. NFS-e Nacional tem fluxo de cadastro, rascunho, assinatura, envio/consulta e XML; ativação depende de certificado/cadastro fiscal e homologação da escola. Não houve emissão real. Veja [decisões e limites atuais](psicologia-nfse.md).

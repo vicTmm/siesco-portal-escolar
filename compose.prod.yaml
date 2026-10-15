@@ -31,12 +31,15 @@ services:
       DATABASE_URL: postgresql+psycopg://portal_app:${POSTGRES_APP_PASSWORD}@db:5432/portal
       PUBLIC_APP_URL: https://${PORTAL_DOMAIN:?Configure o domínio}
       APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:?Configure a chave de proteção dos dados privados}
+      NFSE_CERTIFICATES_FILE: /run/secrets/nfse/certificates.json
       REQUIRE_STAFF_MFA: "true"
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
+    volumes:
+      - ${NFSE_SECRETS_DIR:-./.local/nfse-secrets}:/run/secrets/nfse:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

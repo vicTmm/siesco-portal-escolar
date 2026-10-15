@@ -103,3 +103,14 @@ Mural/autorizações/enquetes, PDFs verificáveis, unidades/perfis, agenda, serv
 - Meta continua adiada. Integrações externas e funções avançadas remanescentes estão discriminadas na matriz de expansão; esta etapa não equivale à conclusão integral da pesquisa ou homologação de produção.
 
 - Ensaio de restauração da versão 0016 em banco dedicado `portal_restore`: contagens e conteúdo coincidiram nas 51 tabelas; papel runtime sem contexto não revelou alunos, avisos, documentos, serviços ou carteira. Banco de uso do portal preservado.
+
+### 15/10/2026 — Psicologia escolar e emissão fiscal
+
+- Escopo revisto pelo usuário: mensalidades/cobrança ficam no Isaac; gateway, transporte por rotas e negociação com juros excluídos das pendências. Inscrição pública explicada, sem priorização adicional. iSapiens permanece como referência de produto, sem login fornecido para mapeamento.
+- Psicologia escolar: perfil próprio, consultas por aluno, observações/análise/plano/retorno, evoluções sem sobrescrever, anexos cifrados, acesso somente ao autor e direção. Demais perfis e unidades bloqueados; direção somente consulta.
+- NFS-e Nacional: cadastro fiscal confirmado com contador, rascunho idempotente com snapshot/versão, DPS assinada e persistida antes do envio, mTLS vinculado ao CNPJ, consulta após timeout, conferência de chave/ambiente/DPS e XML autorizado preservado. Escopo tributário inicial é ME/EPP do Simples com apuração conjunta, sem retenções/deduções/regime especial.
+- Emissão real/homologação externa continuam pendentes: escola de São Gonçalo/RJ informou uso atual pelo iSapiens, mas não forneceu certificado/cadastro fiscal. Regime real não confirmado. UI não inventa autorização sem retorno oficial. Limites e configuração em [psicologia-nfse.md](psicologia-nfse.md).
+- Migrações 0017–0019, RLS, isolamento e preservação de documentos/consultas. Validação local: 99 testes API, 17 frontend/BFF, 14 E2E; build/TypeScript e Alembic check aprovados. Novos E2E cobrem registro/evolução, consulta da direção, ausência de menu para secretaria e rascunho fiscal bloqueado sem certificado. Transporte ocultado sem apagar histórico.
+- Backup/restauração 0019 em `portal_restore`: 53 tabelas com conteúdo/contagens iguais; dados fiscais, serviços e anexos não aparecem ao runtime sem contexto. Banco do portal preservado.
+
+- Usuário confirmou que precisa consultar o contador sobre Simples Nacional. Ativação fiscal permanece pendente dessa confirmação, além de certificado e homologação; não assumir o enquadramento da escola.

@@ -19,6 +19,8 @@ from .accounts import router as accounts_router
 from .management import router as management_router
 from .mfa import router as mfa_router, verify_mfa
 from .annual import router as annual_router
+from .fiscal import router as fiscal_router
+from .psychology import router as psychology_router
 from .exams import router as exams_router
 from .contracts import router as contracts_router
 from .billing import router as billing_router
@@ -59,6 +61,8 @@ app.include_router(access_control_router)
 app.include_router(notifications_router)
 app.include_router(billing_router)
 app.include_router(contracts_router)
+app.include_router(fiscal_router)
+app.include_router(psychology_router)
 app.include_router(exams_router)
 app.include_router(documents_router)
 

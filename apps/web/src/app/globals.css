@@ -54,3 +54,5 @@ h1,h2,h3,p { margin:0; } h1 { font-size:30px; letter-spacing:-1px; line-height:1
 .topbar-user { flex-shrink:0; }
 .user-caption { max-width:180px;overflow:hidden;text-overflow:ellipsis; }
 @media(max-width:700px){.topbar .user-avatar,.topbar-password>span{display:none;}.topbar-user{gap:4px;}.topbar-password{padding:8px;}.topbar{gap:8px;}}
+
+.preserve-lines{white-space:pre-wrap;overflow-wrap:anywhere;}

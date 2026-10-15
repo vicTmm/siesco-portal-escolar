@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, UniqueConstraint, JSON, LargeBinary
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, ForeignKeyConstraint, Integer, String, UniqueConstraint, JSON, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -103,7 +103,7 @@ class Membership(Identity, Base):
     __table_args__ = (UniqueConstraint("user_id", "institution_id", "school_id", "role"),
                      ForeignKeyConstraint(["institution_id", "school_id"], ["schools.institution_id", "schools.id"]),
                      scoped_fk("student_id", "students"), scoped_fk("guardian_id", "guardians"), scoped_fk("teacher_id", "teachers"),
-                     CheckConstraint("role IN ('director','coordinator','secretary','teacher','student','guardian')"),
+                     CheckConstraint("role IN ('director','coordinator','secretary','teacher','student','guardian','psychologist')"),
                      CheckConstraint("(role != 'student' OR student_id IS NOT NULL) AND (role != 'guardian' OR guardian_id IS NOT NULL) AND (role != 'teacher' OR teacher_id IS NOT NULL)"))
 
 
@@ -600,3 +600,41 @@ class NotificationDismissal(Scoped, Base):
 
 
 TENANT_TABLES += ['notification_dismissals']
+
+
+class FiscalProfile(Scoped, Base):
+    __tablename__ = 'fiscal_profiles'
+    cnpj: Mapped[str] = mapped_column(String(14))
+    environment: Mapped[str] = mapped_column(String(20))
+    series: Mapped[int] = mapped_column(Integer)
+    next_number: Mapped[int] = mapped_column(BigInteger)
+    encrypted: Mapped[bytes] = mapped_column(LargeBinary)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    __table_args__ = (*scope_constraints(), UniqueConstraint('institution_id','school_id'), CheckConstraint("environment IN ('test','production')"), CheckConstraint('series>=1 AND series<=49999 AND next_number>0 AND next_number<=999999999999999 AND version>0'))
+
+
+class FiscalInvoice(Scoped, Base):
+    __tablename__ = 'fiscal_invoices'
+    student_id: Mapped[str] = mapped_column(String(36))
+    guardian_id: Mapped[str] = mapped_column(String(36))
+    actor_id: Mapped[str] = mapped_column(ForeignKey('users.id'))
+    key: Mapped[str] = mapped_column(String(36))
+    payload_hash: Mapped[str] = mapped_column(String(64))
+    environment: Mapped[str] = mapped_column(String(20))
+    cnpj: Mapped[str] = mapped_column(String(14))
+    series: Mapped[int] = mapped_column(Integer)
+    number: Mapped[int] = mapped_column(BigInteger)
+    dps_id: Mapped[str] = mapped_column(String(45))
+    encrypted: Mapped[bytes] = mapped_column(LargeBinary)
+    signed_xml: Mapped[bytes | None] = mapped_column(LargeBinary)
+    authorized_xml: Mapped[bytes | None] = mapped_column(LargeBinary)
+    access_key: Mapped[str | None] = mapped_column(String(50))
+    status: Mapped[str] = mapped_column(String(20), default='draft')
+    message: Mapped[str] = mapped_column(String(1000), default='Rascunho fiscal. Não é nota autorizada.')
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    __table_args__ = (*scope_constraints(), scoped_fk('student_id','students'), scoped_fk('guardian_id','guardians'), UniqueConstraint('institution_id','school_id','key'), UniqueConstraint('cnpj','environment','series','number'), CheckConstraint("environment IN ('test','production')"), CheckConstraint("status IN ('draft','submitting','authorized','rejected','unknown')"), CheckConstraint('version>0 AND number>0'))
+
+
+TENANT_TABLES += ['fiscal_profiles','fiscal_invoices']
+Index('ix_fiscal_invoice_scope_date',FiscalInvoice.institution_id,FiscalInvoice.school_id,FiscalInvoice.created_at)

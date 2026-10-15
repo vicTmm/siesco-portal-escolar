@@ -42,3 +42,5 @@ Definir com a escola meta de disponibilidade, RPO, RTO, retenção, responsável
 ## Expansão dos serviços escolares
 
 A versão 0016 acrescenta dados privados, carteira/estoque, documentos, notificações e sincronização offline. Preserve `APP_ENCRYPTION_KEY` no backup; a chave protege MFA e conteúdos clínicos/PEI/retiradas. A migração 0014 usa a chave para converter avisos médicos preexistentes e falha caso precise dela e ela esteja ausente. O serviço de migração recebe a mesma chave da API. Homologue restauração, permissões e carga da versão atual antes de uso real. Detalhes e limites em [expansao-pesquisa.md](expansao-pesquisa.md).
+
+Psicologia e fiscal (0017–0019): equipe de psicologia também exige MFA em produção. NFS-e requer certificado e mapa privado por unidade montados em somente leitura; produção bloqueada até liberação explícita e homologação do contribuinte. Veja [psicologia-nfse.md](psicologia-nfse.md).

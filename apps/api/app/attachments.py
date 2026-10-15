@@ -35,8 +35,11 @@ def upload(
     member=Depends(membership),
     db: Session = Depends(database, scope="function"),
 ):
-    permit(member, MANAGERS | {"teacher", "guardian"})
+    permit(member, MANAGERS | {"teacher", "guardian", "psychologist"})
     r = access_record(db, member, item_id)
+    if r.module == "psychology":
+        from .psychology import authorize
+        authorize(member, r, write=True)
     if member.role == "teacher" or (
         member.role in MANAGERS
         and r.module in {"books", "office_hours", "knowledge", "calendar"}
