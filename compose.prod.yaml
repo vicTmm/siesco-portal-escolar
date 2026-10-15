@@ -52,6 +52,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
   gateway:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -63,7 +69,9 @@ services:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - certificates:/data
       - gateway_config:/config
-    depends_on: [web]
+    depends_on:
+      web:
+        condition: service_healthy
 volumes:
   production_data:
   certificates:
