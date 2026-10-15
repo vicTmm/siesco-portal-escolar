@@ -44,6 +44,9 @@ jobs:
           alembic upgrade head
           pytest -q
           alembic check
+      - name: Prepare clean demo for integration and browser tests
+        working-directory: apps/api
+        run: python -c "import runpy; runpy.run_path('tests/conftest.py')['reset_test_database'].__wrapped__()"
       - name: Start API for integration tests
         working-directory: apps/api
         run: |
