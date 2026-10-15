@@ -21,6 +21,8 @@ Sequência por dependência, sem estimativas de prazo antes de validar equipe e 
 | 12 — Piloto seguro | Observabilidade, backup, direitos e operação | Restauração ensaiada e tempos medidos; teste de carga cumpre meta acordada; fluxo de correção/exportação de dados com identidade verificada demonstrado; logs sem tokens/CPF; plano de incidentes exercitado |
 | 13 — Expansão | Avisos, documentos e relatórios em entregas separadas | Avisos chegam apenas ao público autorizado; download/export exige autorização na execução e leitura; arquivos são privados e links expiram; cada módulo passa matriz de acesso própria |
 
+A expansão solicitada a partir da pesquisa está descrita em [expansao-pesquisa.md](expansao-pesquisa.md), com limites por módulo e itens ainda abertos.
+
 ## Definição de concluído
 
 Cada entrega inclui migração quando aplicável, contrato OpenAPI atualizado, documentação de operação, demonstração do caso feliz e dos casos de negação relevantes. Testes de integração usam PostgreSQL real para constraints/RLS; testes de UI cobrem somente fluxos críticos. Não substituir testes de autorização por ocultação de botão.

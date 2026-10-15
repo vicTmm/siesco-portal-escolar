@@ -4,7 +4,7 @@ from hashlib import sha256
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerificationError, InvalidHashError
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Header
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -46,8 +46,12 @@ def require_platform(user: User = Depends(current_user)):
     return user
 
 
-def membership(institution_id: str, user: User = Depends(current_user), db: Session = Depends(database, scope="function")):
-    member = db.scalar(select(Membership).where(Membership.user_id == user.id, Membership.institution_id == institution_id))
+def membership(institution_id: str, x_membership_id: str | None = Header(default=None), user: User = Depends(current_user), db: Session = Depends(database, scope="function")):
+    stmt = select(Membership).where(Membership.user_id == user.id, Membership.institution_id == institution_id)
+    if x_membership_id: stmt = stmt.where(Membership.id == x_membership_id)
+    members = db.scalars(stmt).all()
+    if len(members)>1: raise HTTPException(409, "Selecione a unidade e o perfil de acesso.")
+    member = members[0] if members else None
     if not member:
         raise HTTPException(404, "Instituição não encontrada.")
     if os.environ.get("REQUIRE_STAFF_MFA") == "true" and member.role in {"director", "coordinator", "secretary", "teacher"} and not user.mfa_secret:

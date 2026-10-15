@@ -181,6 +181,8 @@ class TokenOut(Schema):
 
 
 class MembershipOut(Schema):
+    id: str
+    school_name: str
     institution_id: str
     institution_name: str
     school_id: str

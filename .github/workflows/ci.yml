@@ -34,6 +34,8 @@ jobs:
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
       - run: pip install -r apps/api/requirements.txt
+      - name: Generate ephemeral encryption key
+        run: python -c "import os; from cryptography.fernet import Fernet; open(os.environ['GITHUB_ENV'], 'a').write('APP_ENCRYPTION_KEY=' + Fernet.generate_key().decode() + '\n')"
       - name: Create runtime role
         run: python -c "import os, psycopg; c=psycopg.connect(os.environ['MIGRATION_DATABASE_URL'].replace('postgresql+psycopg','postgresql'), autocommit=True); c.execute(\"CREATE ROLE portal_app LOGIN PASSWORD 'ci_app' NOSUPERUSER NOBYPASSRLS\"); c.close()"
       - name: Migrate and test API
@@ -70,6 +72,7 @@ jobs:
       - name: Validate Compose and start the full stack
         run: |
           cp .env.example .env
+          python3 -c "import base64,secrets; open('.env', 'a').write('\nAPP_ENCRYPTION_KEY=' + base64.urlsafe_b64encode(secrets.token_bytes(32)).decode() + '\n')"
           docker compose config --quiet
           docker compose up --build -d --wait --wait-timeout 180
           curl --fail --retry 10 --retry-delay 2 --retry-all-errors --max-time 10 http://localhost:8100/health

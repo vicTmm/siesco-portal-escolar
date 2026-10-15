@@ -38,3 +38,7 @@ Definir com a escola meta de disponibilidade, RPO, RTO, retenção, responsável
 - Auditoria transacional de mutações e exportações; sem payload pessoal nos logs de erro. Motivos de movimentação e reabertura ficam em registros separados, restritos à instituição.
 - Recuperação de senha depende de caixa de e-mail confiável; não desativa MFA. Se perder também os códigos de recuperação, definir procedimento institucional de identificação e intervenção autorizada, sem bypass automático.
 - Testes locais não substituem revisão externa de segurança, definição legal de retenção/base de tratamento, direitos dos titulares, proteção operacional contra abuso e teste de carga com metas acordadas. Esses itens dependem de responsáveis e infraestrutura reais.
+
+## Expansão dos serviços escolares
+
+A versão 0016 acrescenta dados privados, carteira/estoque, documentos, notificações e sincronização offline. Preserve `APP_ENCRYPTION_KEY` no backup; a chave protege MFA e conteúdos clínicos/PEI/retiradas. A migração 0014 usa a chave para converter avisos médicos preexistentes e falha caso precise dela e ela esteja ausente. O serviço de migração recebe a mesma chave da API. Homologue restauração, permissões e carga da versão atual antes de uso real. Detalhes e limites em [expansao-pesquisa.md](expansao-pesquisa.md).

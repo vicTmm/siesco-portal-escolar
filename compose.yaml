@@ -21,6 +21,7 @@ services:
     build: ./apps/api
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD}@db:5432/portal
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-}
     command: ["alembic", "upgrade", "head"]
     depends_on:
       db:
