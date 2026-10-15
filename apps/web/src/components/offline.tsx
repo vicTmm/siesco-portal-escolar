@@ -296,6 +296,7 @@ export function OfflineView() {
                 setCurrent(m);
                 sessionStorage.setItem("siesco_offline_membership", m.id);
                 setSelected("");
+                setReview(null);
                 try {
                   setJournals(
                     await allRows(`institutions/${m.institution_id}/journals`),
@@ -336,6 +337,7 @@ export function OfflineView() {
             value={selected}
             onChange={(e) => {
               setSelected(e.target.value);
+              setReview(null);
               setLesson("new");
             }}
           >
@@ -569,7 +571,7 @@ export function OfflineView() {
                 Revisar versão atual e conflitos
               </Button>
             )}
-            {review && (
+            {review && review.id === item.journal.id && (
               <ConflictReview
                 item={item}
                 current={review}

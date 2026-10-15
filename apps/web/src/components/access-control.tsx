@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, allRows, type Row } from "@/lib/api";
 import { Attachments } from "./services";
 import { Button } from "./ui/button";
@@ -26,6 +26,7 @@ export function AccessControlView({
   base: string;
   role: string;
 }) {
+  const cardRequest = useRef(0);
   const staff = ["director", "secretary"].includes(role),
     guardian = role === "guardian",
     [students, setStudents] = useState<Row[]>([]),
@@ -57,12 +58,13 @@ export function AccessControlView({
     }
   }
   async function refreshCard() {
-    if (student)
-      setCard(
-        await api<Code>(base + `/school-cards/${student}/issue`, {
+    if (student) {
+      const request = ++cardRequest.current;
+      const result = await api<Code>(base + `/school-cards/${student}/issue`, {
           method: "POST",
-        }),
-      );
+        });
+      if (request === cardRequest.current) setCard(result);
+    }
   }
   useEffect(() => {
     (staff
@@ -111,8 +113,8 @@ export function AccessControlView({
       () => refreshCard().catch((e) => setError(e.message)),
       60000,
     );
-    return () => clearInterval(timer);
-  }, [student]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { clearInterval(timer); cardRequest.current++; };
+  }, [base, student]); // eslint-disable-line react-hooks/exhaustive-deps
   async function run(task: () => Promise<void>) {
     setBusy(true);
     setError("");
@@ -200,7 +202,7 @@ export function AccessControlView({
           <select
             aria-label="Aluno da identificação"
             value={student}
-            onChange={(e) => setStudent(e.target.value)}
+            onChange={(e) => { cardRequest.current++; setCard(null); setStudent(e.target.value); }}
           >
             <option value="">Selecione</option>
             {students.map((s) => (
