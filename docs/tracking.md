@@ -35,10 +35,10 @@ Status: **Pendente**, **Em andamento**, **Implementado**, **Validado**. Registra
 | SEC-01 | Antes do piloto | Revisão de segurança e proteção de dados | Em andamento | CSP com nonce, MFA, controles SQL, tokens e exports protegidos. Revisão independente, retenção/base legal e procedimentos institucionais continuam pendentes. |
 | UX-01 | Média | Busca global, filtros e paginação do portal | Implementado | Busca global e por nome nos cadastros; portal familiar com busca/paginação. Busca local permanece em cadastros de relações sem nome próprio. |
 | AUD-01 | Média | Consulta de auditoria e motivo de cancelamento | Implementado | Consulta paginada para direção; motivos de movimentação/reabertura preservados; exportações auditadas. |
-| ORG-01 | Conforme piloto | Múltiplas unidades e perfis por conta/instituição | Pendente | Hoje uma escola e um perfil por conta/instituição. |
-| EXP-01 | Posterior | Avisos, documentos e relatórios | Em andamento | Mock WhatsApp; CSV autorizado e impressão de boletim. Meta real adiada pelo usuário; documentos oficiais assinados/anexos privados continuam expansão específica. |
+| ORG-01 | Conforme piloto | Múltiplas unidades e perfis por conta/instituição | Implementado | Cadastro de unidades, vários perfis por conta e seleção explícita de vínculo; isolamento testado. |
+| EXP-01 | Atual | Avisos, documentos e relatórios | Implementado | Mural, autorizações, enquetes, leitura, PDFs com QR/hash/revogação e anexos privados. WhatsApp real permanece adiado; assinatura externa não implementada. |
 
-Financeiro, pagamentos, biblioteca, transporte, LMS e aplicativos nativos continuam fora do MVP; não são bloqueadores do escopo atual.
+A expansão solicitada após a pesquisa acrescenta serviços escolares, agenda, alertas, correção por gabarito e propostas de grade. Consulte [expansao-pesquisa.md](expansao-pesquisa.md) para a matriz de funções entregues, limites e desenvolvimento restante; o documento não marca a pesquisa inteira como concluída.
 
 ## Registro das entregas
 
@@ -93,3 +93,24 @@ Próxima sequência: diário/frequência → avaliações/notas → boletim, com
 - Validação local final desta etapa: 56 testes backend, 14 frontend/BFF (incluindo API real), 9 E2E em build de produção; TypeScript/build e alembic check aprovados. CI/Docker aprovadas no GitHub: runs 38676200687 (push) e 38676205411 (PR), com jobs verify e containers.
 
 - Ensaio final de restauração na versão 0005: contagens de instituições, contas, alunos, aulas, notas, publicações por período/anuais e alocações coincidiram com o banco de origem; papel runtime não revelou alunos sem contexto após restaurar.
+
+### 15/10/2026 — Expansão da pesquisa
+
+Mural/autorizações/enquetes, PDFs verificáveis, unidades/perfis, agenda, serviços escolares e apoio pedagógico implementados. Dados sensíveis com permissões por aluno e criptografia; anexos privados; conteúdos emitidos imutáveis. Detalhes e pendências em [expansao-pesquisa.md](expansao-pesquisa.md). WhatsApp oficial continua adiado por solicitação do usuário.
+
+- Complementos desta expansão: PWA/diário offline e revisão de conflitos; metas PEI, enfermaria e medicação; carteira, estoque e checkout; simulação/reestruturação de recebíveis; identificação/retirada QR e fila; expediente, calendário e notificações internas; provas/gabaritos separados e minutas sem assinatura.
+- Validação local: 81 testes da API, 16 frontend/BFF com API real e 12 E2E no build de produção; build/TypeScript e Alembic sem divergência. Offline E2E cobre perda de rede, versão concorrente, reautenticação com rascunhos preservados e limpeza no logout. PDFs de boletim, prova, gabarito e minuta renderizados e revisados.
+- Meta continua adiada. Integrações externas e funções avançadas remanescentes estão discriminadas na matriz de expansão; esta etapa não equivale à conclusão integral da pesquisa ou homologação de produção.
+
+- Ensaio de restauração da versão 0016 em banco dedicado `portal_restore`: contagens e conteúdo coincidiram nas 51 tabelas; papel runtime sem contexto não revelou alunos, avisos, documentos, serviços ou carteira. Banco de uso do portal preservado.
+
+### 15/10/2026 — Psicologia escolar e emissão fiscal
+
+- Escopo revisto pelo usuário: mensalidades/cobrança ficam no Isaac; gateway, transporte por rotas e negociação com juros excluídos das pendências. Inscrição pública explicada, sem priorização adicional. iSapiens permanece como referência de produto, sem login fornecido para mapeamento.
+- Psicologia escolar: perfil próprio, consultas por aluno, observações/análise/plano/retorno, evoluções sem sobrescrever, anexos cifrados, acesso somente ao autor e direção. Demais perfis e unidades bloqueados; direção somente consulta.
+- NFS-e Nacional: cadastro fiscal confirmado com contador, rascunho idempotente com snapshot/versão, DPS assinada e persistida antes do envio, mTLS vinculado ao CNPJ, consulta após timeout, conferência de chave/ambiente/DPS e XML autorizado preservado. Escopo tributário inicial é ME/EPP do Simples com apuração conjunta, sem retenções/deduções/regime especial.
+- Emissão real/homologação externa continuam pendentes: escola de São Gonçalo/RJ informou uso atual pelo iSapiens, mas não forneceu certificado/cadastro fiscal. Regime real não confirmado. UI não inventa autorização sem retorno oficial. Limites e configuração em [psicologia-nfse.md](psicologia-nfse.md).
+- Migrações 0017–0019, RLS, isolamento e preservação de documentos/consultas. Validação local: 99 testes API, 17 frontend/BFF, 14 E2E; build/TypeScript e Alembic check aprovados. Novos E2E cobrem registro/evolução, consulta da direção, ausência de menu para secretaria e rascunho fiscal bloqueado sem certificado. Transporte ocultado sem apagar histórico.
+- Backup/restauração 0019 em `portal_restore`: 53 tabelas com conteúdo/contagens iguais; dados fiscais, serviços e anexos não aparecem ao runtime sem contexto. Banco do portal preservado.
+
+- Usuário confirmou que precisa consultar o contador sobre Simples Nacional. Ativação fiscal permanece pendente dessa confirmação, além de certificado e homologação; não assumir o enquadramento da escola.

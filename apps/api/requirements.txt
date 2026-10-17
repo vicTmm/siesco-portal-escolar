@@ -36,3 +36,13 @@ tzdata==2026.5
 uvicorn==0.54.0
 
 cryptography==50.0.2
+
+reportlab==5.0.1
+qrcode==8.2
+pillow==12.3.0
+charset-normalizer==3.5.2
+
+pypdf==6.20.1
+
+signxml==4.5.1
+lxml==6.1.3

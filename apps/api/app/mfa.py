@@ -34,9 +34,9 @@ class DisableIn(PasswordIn,CodeIn):pass
 
 def cipher():
     key=os.environ.get('APP_ENCRYPTION_KEY')
-    if not key:raise HTTPException(503,'A chave de proteção do MFA ainda não foi configurada.')
+    if not key:raise HTTPException(503,'A chave de proteção de dados ainda não foi configurada.')
     try:return Fernet(key.encode())
-    except ValueError:raise HTTPException(503,'Configuração de proteção do MFA inválida.')
+    except ValueError:raise HTTPException(503,'Configuração de proteção de dados inválida.')
 
 
 def totp(secret,step,digits=6):

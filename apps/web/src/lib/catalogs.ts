@@ -4,7 +4,7 @@ const people = ["director", "secretary"];
 const academic = ["director", "coordinator"];
 const name: Field = { key: "name", label: "Nome completo", required: true, min: 2, max: 160 };
 const email: Field = { key: "email", label: "E-mail", type: "email", required: true, max: 254 };
-export const roles: [string, string][] = [["director", "Diretor"], ["coordinator", "Coordenador pedagógico"], ["secretary", "Secretaria"], ["teacher", "Professor"], ["student", "Aluno"], ["guardian", "Responsável"]];
+export const roles: [string, string][] = [["director", "Diretor"], ["coordinator", "Coordenador pedagógico"], ["secretary", "Secretaria"], ["teacher", "Professor"], ["psychologist", "Psicólogo escolar"], ["student", "Aluno"], ["guardian", "Responsável"]];
 export const shifts: [string, string][] = [["morning", "Manhã"], ["afternoon", "Tarde"], ["evening", "Noite"], ["full", "Integral"]];
 export const catalogs: Record<string, Catalog> = {
   students: { title: "Alunos", singular: "aluno", description: "Cada trajetória começa com um cadastro bem cuidado.", fields: [name, { key: "birth_date", label: "Data de nascimento", type: "date", required: true }], columns: ["name", "birth_date"], writers: people, editable: true },

@@ -13,11 +13,12 @@ Primeira versão funcional para demonstração local, com FastAPI, Next.js/TypeS
 - Vínculos familiares verificáveis/revogáveis e atribuição de professor/disciplina à turma.
 - Matrículas: criação, prevenção de duplicidade, capacidade sob concorrência e cancelamento com preservação do registro.
 - Contas de acesso: criação pelo diretor, perfil e pessoa vinculada; revogação imediata do vínculo.
-- Dashboard administrativo responsivo com dados reais da API; portal restrito por vínculo para professor, aluno e responsável.
+- Dashboard administrativo responsivo com dados reais da API; portal restrito por vínculo para professor, aluno, responsável e psicólogo escolar.
 - Validação no servidor, auditoria transacional, isolamento por instituição com RLS e chaves estrangeiras compostas.
-- Migração inicial congelada, seed idempotente de duas instituições fictícias, testes e APIs documentadas.
+- Migrações congeladas, seed idempotente de duas instituições fictícias, testes e APIs documentadas.
+- Mural/autorizações, documentos PDF verificáveis, serviços escolares, agenda, PEI/saúde, carteira/estoque, retirada QR, provas e diário offline. Consulte [escopo, demonstração e limites](docs/expansao-pesquisa.md).
 
-Uma escola por instituição e um perfil por conta/instituição nesta versão. Os sete perfis são administrador da plataforma, diretor, coordenador, secretaria, professor, aluno e responsável. Consulte as diferenças em relação à arquitetura completa em [docs/implementacao-v1.md](docs/implementacao-v1.md).
+Múltiplas unidades e perfis por conta estão disponíveis, com seleção explícita de acesso. Os oito perfis são administrador da plataforma, diretor, coordenador, secretaria, professor, aluno, responsável e psicólogo escolar. Consulte as diferenças em relação à arquitetura completa em [docs/implementacao-v1.md](docs/implementacao-v1.md).
 
 ## Executar com Docker Compose
 
@@ -32,6 +33,8 @@ docker compose ps -a
 ```
 
 Linux/macOS: use `cp .env.example .env` antes do mesmo comando Compose.
+
+Para habilitar os dados protegidos e a identificação por QR, gere uma chave única com `docker compose run --build --rm --no-deps migrate python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`, copie o resultado para `APP_ENCRYPTION_KEY` no `.env` e execute novamente `docker compose up -d`. Preserve a chave; não gere outra ao reiniciar ou atualizar o app.
 
 A inicialização espera o banco, aplica migrações, cria a demonstração e sobe API/interface. Os serviços `migrate` e `seed` devem terminar com código 0. Aguarde o build inicial e a API saudável.
 
@@ -61,13 +64,14 @@ Senha inicial de todas as contas: valor de `DEMO_PASSWORD` no `.env`, por padrã
 | Professor | `teacher@aurora.example.com` |
 | Aluno | `student@aurora.example.com` |
 | Responsável | `guardian@aurora.example.com` |
+| Psicólogo escolar | `psychologist@aurora.example.com` |
 | Diretor da segunda instituição | `director@horizonte.example.com` |
 
 Os outros cinco perfis também existem em `@horizonte.example.com`. Os domínios são reservados para exemplos; nenhum e-mail é enviado. Professor e responsável veem apenas alunos associados aos seus vínculos. A conta da plataforma administra instituições e não consulta os dados acadêmicos delas.
 
 Roteiro: entre como diretor → cadastre aluno e responsável → verifique o vínculo familiar → cadastre professor e disciplina → crie turma e atribuição → faça a matrícula → confira o dashboard. Para testar outro perfil, saia e entre com a respectiva conta.
 
-O seed só executa com `ALLOW_DEMO_SEED=true` e uma `DEMO_PASSWORD` explícita. Rodá-lo novamente preserva os dados e senhas existentes. Não existe reset automático do banco. Para aplicar a senha do `.env` às contas fictícias já existentes, execute `docker compose run --rm seed python -m app.seed --reset-passwords`. Esse comando altera somente as senhas das 13 contas de demonstração conhecidas; não remove cadastros. A senha curta é aceita apenas no seed local; contas criadas pelo portal continuam exigindo 12 caracteres.
+O seed só executa com `ALLOW_DEMO_SEED=true` e uma `DEMO_PASSWORD` explícita. Rodá-lo novamente preserva os dados e senhas existentes. Não existe reset automático do banco. Para aplicar a senha do `.env` às contas fictícias já existentes, execute `docker compose run --rm seed python -m app.seed --reset-passwords`. Esse comando altera somente as senhas das 15 contas de demonstração conhecidas; não remove cadastros. A senha curta é aceita apenas no seed local; contas criadas pelo portal continuam exigindo 12 caracteres.
 
 ## Testes
 
@@ -202,3 +206,5 @@ set +a
 A caixa de e-mails de desenvolvimento fica em `.local/mail` na raiz; nenhum e-mail real é enviado nesse modo. Não versione esse diretório ou a chave. Em outros checkouts, gere uma chave própria e configure as variáveis documentadas.
 
 Publicação externa: [operação de produção](docs/operacao-producao.md), `compose.prod.yaml` e `infra/ops/`. Requer servidor/domínio/segredos/SMTP reais; não executar o seed de demonstração em produção. WhatsApp real segue adiado, mantendo o fluxo mock disponível.
+
+Psicologia escolar e NFS-e: [funcionalidades, decisões e configuração segura](docs/psicologia-nfse.md). Cobrança de mensalidades permanece no Isaac; emissão fiscal real aguarda certificado e homologação.

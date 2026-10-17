@@ -21,7 +21,7 @@ def seed(*, reset_passwords=False):
             emails = ["admin@demo.example.com", *[
                 f"{role}@{slug}.example.com"
                 for slug in ("aurora", "horizonte")
-                for role in ("director", "coordinator", "secretary", "teacher", "student", "guardian")
+                for role in ("director", "coordinator", "secretary", "teacher", "student", "guardian", "psychologist")
             ]]
             users = db.scalars(select(m.User).where(m.User.email.in_(emails))).all()
             for user in users:
@@ -29,7 +29,21 @@ def seed(*, reset_passwords=False):
             print(f"Senha atualizada em {len(users)} contas fictícias existentes.")
             return
         if db.scalar(select(m.User).where(m.User.email == "admin@demo.example.com")):
-            print("Demonstração já cadastrada; nenhum dado alterado.")
+            # Add the newly introduced demo role without resetting existing passwords/data.
+            for slug in ("aurora", "horizonte"):
+                institution = db.scalar(select(m.Institution).where(m.Institution.slug == slug))
+                if not institution: continue
+                tenant_context(db, institution.id)
+                school = db.scalar(select(m.School).where(m.School.institution_id == institution.id, m.School.name == "Unidade principal"))
+                if not school: continue
+                email = f"psychologist@{slug}.example.com"
+                user = db.scalar(select(m.User).where(m.User.email == email))
+                if not user:
+                    user = m.User(name="Psicólogo escolar · " + slug, email=email, password_hash=password_hasher.hash(password))
+                    db.add(user); db.flush()
+                    # Existing users may have had access intentionally revoked; never regrant it.
+                    db.add(m.Membership(user_id=user.id, institution_id=institution.id, school_id=school.id, role="psychologist"))
+            print("Demonstração preservada; novas contas de psicologia adicionadas quando necessário.")
             return
         hashed = password_hasher.hash(password)
         db.add(m.User(name="Admin Demonstração", email="admin@demo.example.com", password_hash=hashed, platform_admin=True))
@@ -58,7 +72,7 @@ def seed(*, reset_passwords=False):
                 db.flush()
                 db.add(m.Placement(enrollment_id=enrollment.id, class_id=enrollment.class_id, start_date=date(2026, 2, 2), **scope))
             db.add(m.Assignment(class_id=groups[0].id, subject_id=subjects[0].id, teacher_id=teacher.id, **scope))
-            for role, label in [("director", "Direção"), ("coordinator", "Coordenação"), ("secretary", "Secretaria"), ("teacher", "Professor"), ("student", "Aluno"), ("guardian", "Responsável")]:
+            for role, label in [("director", "Direção"), ("coordinator", "Coordenação"), ("secretary", "Secretaria"), ("teacher", "Professor"), ("student", "Aluno"), ("guardian", "Responsável"), ("psychologist", "Psicólogo escolar")]:
                 user = m.User(name=label + " · " + slug, email=f"{role}@{slug}.example.com", password_hash=hashed)
                 db.add(user)
                 db.flush()

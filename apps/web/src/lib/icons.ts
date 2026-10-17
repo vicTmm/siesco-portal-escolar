@@ -1,5 +1,5 @@
 import {
-  Award, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardCheck,
+  Brain, ReceiptText, FilePenLine, Bell, ScanQrCode, WalletCards, CloudOff, TriangleAlert, ListChecks, Grid2X2, Network, CalendarClock, Megaphone, FileBadge, Boxes, Award, BookOpen, Building2, CalendarDays, CalendarRange, ClipboardCheck,
   ContactRound, FileChartColumn, GraduationCap, History, LayoutDashboard,
   LibraryBig, Link2, MessageCircle, NotebookPen, Presentation, School,
   Search, ShieldCheck, TableProperties, UserRound, UserRoundPen,
@@ -8,6 +8,21 @@ import {
 // Different destinations have distinct symbols. Reuse a module's symbol wherever
 // that same destination appears, so navigation, shortcuts and cards agree.
 export const moduleIcons = {
+  psychology: Brain,
+  fiscal: ReceiptText,
+  "access-control": ScanQrCode,
+  exams: FilePenLine,
+  notifications: Bell,
+  commerce: WalletCards,
+  offline: CloudOff,
+  alerts: TriangleAlert,
+  correction: ListChecks,
+  timetables: Grid2X2,
+  units: Network,
+  meetings: CalendarClock,
+  notices: Megaphone,
+  documents: FileBadge,
+  services: Boxes,
   search: Search,
   dashboard: LayoutDashboard,
   students: GraduationCap,

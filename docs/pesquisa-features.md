@@ -1,3 +1,5 @@
+> Status de implementação: consulte [expansao-pesquisa.md](expansao-pesquisa.md). Esta pesquisa inclui visão futura e não representa uma lista de funcionalidades integralmente concluídas.
+
 # Pesquisa Aprofundada: Funcionalidades, Inovações e Tendências em Apps de Gestão Escolar (2024–2026)
 
 Este documento apresenta um levantamento exaustivo do ecossistema de software de gestão escolar (Sistemas de Gestão Escolar - SGE, Student Information Systems - SIS e SuperApps Escolares). O objetivo é fornecer uma base completa e estruturada para **cruzamento e análise de viabilidade com o SIESCO Portal Escolar**.

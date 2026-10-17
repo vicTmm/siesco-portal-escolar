@@ -19,6 +19,22 @@ from .accounts import router as accounts_router
 from .management import router as management_router
 from .mfa import router as mfa_router, verify_mfa
 from .annual import router as annual_router
+from .fiscal import router as fiscal_router
+from .psychology import router as psychology_router
+from .exams import router as exams_router
+from .contracts import router as contracts_router
+from .billing import router as billing_router
+from .notifications import router as notifications_router
+from .access_control import router as access_control_router
+from .commerce import router as commerce_router
+from .offline import router as offline_router
+from .units import router as units_router
+from .insights import router as insights_router
+from .attachments import router as attachments_router
+from .meetings import router as meetings_router
+from .services import router as services_router
+from .community import router as community_router
+from .documents import router as documents_router
 from .security import (ACADEMIC_WRITERS, DUMMY_HASH, MANAGERS, PEOPLE_WRITERS, bearer,
                        current_user, hash_token, membership, password_hasher, permit,
                        require_platform, verify_password)
@@ -33,6 +49,22 @@ app.include_router(accounts_router)
 app.include_router(management_router)
 app.include_router(mfa_router)
 app.include_router(annual_router)
+app.include_router(community_router)
+app.include_router(services_router)
+app.include_router(meetings_router)
+app.include_router(attachments_router)
+app.include_router(insights_router)
+app.include_router(units_router)
+app.include_router(offline_router)
+app.include_router(commerce_router)
+app.include_router(access_control_router)
+app.include_router(notifications_router)
+app.include_router(billing_router)
+app.include_router(contracts_router)
+app.include_router(fiscal_router)
+app.include_router(psychology_router)
+app.include_router(exams_router)
+app.include_router(documents_router)
 
 
 @app.middleware("http")
@@ -108,11 +140,16 @@ def logout(user=Depends(current_user), credentials=Depends(bearer), db: Session 
     db.execute(delete(m.LoginSession).where(m.LoginSession.token_hash == hash_token(credentials.credentials)))
 
 
+def school_name(db,member):
+    tenant_context(db,member.institution_id)
+    return db.get(m.School,member.school_id).name
+
+
 @app.get(PREFIX + "/me", response_model=s.MeOut, tags=["Autenticação"])
 def me(user=Depends(current_user), db: Session = Depends(database, scope="function")):
     rows = db.execute(select(m.Membership, m.Institution).join(m.Institution, m.Institution.id == m.Membership.institution_id).where(m.Membership.user_id == user.id)).all()
     return {"id": user.id, "name": user.name, "email": user.email, "platform_admin": user.platform_admin,
-            "memberships": [{"institution_id": i.id, "institution_name": i.name, "school_id": member.school_id, "role": member.role} for member, i in rows]}
+            "memberships": [{"id": member.id, "school_name": school_name(db,member), "institution_id": i.id, "institution_name": i.name, "school_id": member.school_id, "role": member.role} for member, i in rows]}
 
 
 @app.get(PREFIX + "/platform/institutions", response_model=list[s.InstitutionOut], tags=["Plataforma"])
@@ -334,7 +371,12 @@ def revoke_account(item_id: UUID, member=Depends(membership), db: Session = Depe
     account = db.scalar(select(m.Membership).where(m.Membership.id == str(item_id), m.Membership.institution_id == member.institution_id, m.Membership.school_id == member.school_id).with_for_update())
     if not account:
         raise HTTPException(404, "Conta não encontrada.")
-    if account.user_id == member.user_id:
+    if account.id == member.id:
         raise HTTPException(409, "Você não pode remover seu próprio acesso.")
     audit(db, member, "accounts.revoke", account.id)
+    if account.role in MANAGERS|{'teacher'}:
+        other_staff=db.scalar(select(m.Membership).where(m.Membership.user_id==account.user_id,m.Membership.institution_id==member.institution_id,m.Membership.school_id==member.school_id,m.Membership.id!=account.id,m.Membership.role.in_(MANAGERS|{'teacher'})))
+        if not other_staff:
+            for grant in db.scalars(scoped(m.SensitiveGrant,member).where(m.SensitiveGrant.user_id==account.user_id)):
+                grant.active=False
     db.delete(account)

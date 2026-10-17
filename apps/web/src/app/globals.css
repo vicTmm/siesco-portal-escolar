@@ -26,3 +26,33 @@ h1,h2,h3,p { margin:0; } h1 { font-size:30px; letter-spacing:-1px; line-height:1
 .learning-toolbar { display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:16px 0; }.learning-toolbar>h2 { margin-right:auto; }.learning-toolbar>span { font-size:12px;color:var(--muted); }.learning-note { font-size:12px;color:var(--muted);line-height:1.8;margin:16px 0; }.learning-body { padding:24px; }.learning-section { margin-top:24px; }.learning-card { cursor:pointer;text-align:left; }.learning-tabs { display:flex;gap:8px;margin:18px 0;overflow-x:auto; }.learning-tabs button { background:white;border:1px solid var(--line);padding:12px;border-radius:9px;white-space:nowrap;font-size:12px; }.learning-tabs button[aria-selected=true] { background:#e3efe7;color:var(--green);border-color:#bad4c2; }.learning-record { border-bottom:1px solid var(--line);padding:18px 0;display:flex;align-items:center;justify-content:space-between;gap:16px; }.learning-record p { margin-top:8px;line-height:1.7;font-size:12px;overflow-wrap:anywhere; }.learning-record small { display:block;color:var(--muted);font-size:11px;margin-top:8px; }.learning-batch { max-height:50vh;overflow:auto;margin:20px 0; }.learning-batch .field { padding:12px 0;border-bottom:1px solid var(--line); }.learning-batch .field>span { font-size:12px; }.learning-body .field { margin:16px 0; }.learning-body .field input,.learning-body .field select { max-width:100%; }.portal-card small { color:var(--muted);font-size:10px;line-height:1.6; }
 @media(max-width:600px) { .learning-body { padding:18px; }.learning-record { align-items:flex-start;flex-direction:column; }.learning-toolbar button { font-size:12px; } }
 @media print { .sidebar,.topbar,.learning-toolbar,.page-heading,.learning-tabs { display:none!important; }.workspace { margin:0; }.main-content { padding:0; }.panel { border:0; }.learning-record { break-inside:avoid; } }
+
+.school-workflow { display:grid;gap:20px;min-width:0; }
+.school-workflow>.page-heading { margin-bottom:0; }
+.school-workflow>.panel { padding:24px; }
+.school-workflow .record-form { gap:14px; }
+.school-workflow .field { margin:0; }
+.school-workflow h2 { font-size:20px;line-height:1.4; }
+.school-workflow h3 { font-size:17px;line-height:1.5; }
+.school-workflow p { font-size:13px;line-height:1.7;overflow-wrap:anywhere; }
+.school-workflow .field textarea { width:100%;min-height:100px;resize:vertical;border:1px solid #dfe7dc;border-radius:8px;padding:11px 12px;color:#3e5443;background:white;font:inherit;line-height:1.6; }
+.school-workflow .field textarea:focus { outline:2px solid #b6d1af55;border-color:#73a174; }
+.school-workflow .learning-record { flex-wrap:wrap; }
+.school-workflow fieldset { display:grid;min-width:0;border:1px solid var(--line);border-radius:10px;padding:16px; }
+.school-workflow legend { padding:0 6px;font-size:12px;white-space:normal; }
+.school-workflow summary { cursor:pointer;font-weight:600;font-size:14px; }
+.school-workflow label>input[type=checkbox] { margin-right:8px; }
+.school-workflow .learning-toolbar span { overflow-wrap:anywhere; }
+@media(max-width:700px) { .school-workflow>.panel { padding:18px; }.school-workflow .learning-toolbar { align-items:flex-start; }.school-workflow .learning-record { flex-direction:column;align-items:flex-start; } }
+.report-comparison { margin:14px 0;min-width:240px;max-width:420px; }
+.report-bar { height:9px;overflow:hidden;background:#e6eee8;border-radius:5px;margin:6px 0 10px; }
+.report-bar>span { display:block;height:100%;background:#17664e;border-radius:5px; }
+.report-bar.class-average>span { background:#90afa1; }
+@media(max-width:700px){.report-comparison{min-width:0;width:100%;}}
+.breadcrumb { min-width:0;flex:1; }
+.breadcrumb strong { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.topbar-user { flex-shrink:0; }
+.user-caption { max-width:180px;overflow:hidden;text-overflow:ellipsis; }
+@media(max-width:700px){.topbar .user-avatar,.topbar-password>span{display:none;}.topbar-user{gap:4px;}.topbar-password{padding:8px;}.topbar{gap:8px;}}
+
+.preserve-lines{white-space:pre-wrap;overflow-wrap:anywhere;}

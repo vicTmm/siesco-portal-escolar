@@ -261,5 +261,21 @@ def report(student_id:UUID,member=Depends(membership),db:Session=Depends(databas
         if p.journal_id in seen:continue
         seen.add(p.journal_id)
         row=next((r for r in p.snapshot['results'] if r['student_id']==student.id),None)
-        if row:items.append({'id':p.id,'revision':p.revision,'published_at':p.published_at,'class':p.snapshot['class'],'subject':p.snapshot['subject'],'term':p.snapshot['term'],'policy':p.snapshot['policy'],'result':row})
+        valid=[Decimal(r['average']) for r in p.snapshot['results'] if r['average'] is not None and not r['pending']]
+        comparison=(sum(valid,Decimal(0))/len(valid)).quantize(Decimal(1).scaleb(-int(p.snapshot['policy']['decimals'])),rounding=ROUND_HALF_UP) if len(valid)>=5 and p.snapshot['policy']['method']!='concepts' else None
+        if row:items.append({'id':p.id,'revision':p.revision,'published_at':p.published_at,'class':p.snapshot['class'],'subject':p.snapshot['subject'],'term':p.snapshot['term'],'policy':p.snapshot['policy'],'result':row,'class_average':str(comparison) if comparison is not None else None})
     return {'student':student.name,'items':items}
+
+
+@router.get('/journals/{item_id}/arrival-suggestions')
+def arrival_suggestions(item_id:UUID,date:date,member=Depends(membership),db:Session=Depends(database,scope='function')):
+    from datetime import datetime,time
+    from zoneinfo import ZoneInfo
+    j=journal_access(db,member,item_id);check_date(db,member,j,date)
+    students={s.id for s in roster(db,member,j,date)}
+    zone=ZoneInfo('America/Sao_Paulo');start=datetime.combine(date,time(),zone);end=start+timedelta(days=1)
+    records=scoped(m.ServiceRecord,member).with_only_columns(m.ServiceRecord.id).where(m.ServiceRecord.module=='access',m.ServiceRecord.student_id.in_(students))
+    events=db.execute(select(m.ServiceRecord.student_id,m.ServiceEvent.created_at).join(m.ServiceEvent,m.ServiceEvent.record_id==m.ServiceRecord.id).where(m.ServiceRecord.id.in_(records),m.ServiceEvent.action=='transition',m.ServiceEvent.data['to'].as_string()=='entered',m.ServiceEvent.created_at>=start,m.ServiceEvent.created_at<end)).all()
+    latest={}
+    for sid,timestamp in events:latest[sid]=max(latest.get(sid,timestamp),timestamp)
+    return [{'student_id':sid,'suggested_status':'present','recorded_at':timestamp} for sid,timestamp in latest.items()]

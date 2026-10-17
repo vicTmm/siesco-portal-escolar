@@ -21,6 +21,8 @@ Sequência por dependência, sem estimativas de prazo antes de validar equipe e 
 | 12 — Piloto seguro | Observabilidade, backup, direitos e operação | Restauração ensaiada e tempos medidos; teste de carga cumpre meta acordada; fluxo de correção/exportação de dados com identidade verificada demonstrado; logs sem tokens/CPF; plano de incidentes exercitado |
 | 13 — Expansão | Avisos, documentos e relatórios em entregas separadas | Avisos chegam apenas ao público autorizado; download/export exige autorização na execução e leitura; arquivos são privados e links expiram; cada módulo passa matriz de acesso própria |
 
+A expansão solicitada a partir da pesquisa está descrita em [expansao-pesquisa.md](expansao-pesquisa.md), com limites por módulo e itens ainda abertos.
+
 ## Definição de concluído
 
 Cada entrega inclui migração quando aplicável, contrato OpenAPI atualizado, documentação de operação, demonstração do caso feliz e dos casos de negação relevantes. Testes de integração usam PostgreSQL real para constraints/RLS; testes de UI cobrem somente fluxos críticos. Não substituir testes de autorização por ocultação de botão.
@@ -35,3 +37,5 @@ Dados reais só entram depois da entrega 12 e da homologação das regras acadê
 - Instituições com exigência de banco dedicado: avaliar impacto contratual e operacional antes de onboarding.
 - Histórico e transferências: homologar equivalências de disciplina/escala antes de automatizar resultado.
 - Retenção, exportação, infraestrutura e suboperadores: validar com responsáveis institucionais antes do piloto.
+
+Atualização de escopo de 15/10/2026: cobrança via Isaac, transporte por rotas e negociação com juros excluídos das pendências. Psicologia escolar entregue; NFS-e Nacional preparada, com ativação/homologação externa pendente. Veja [psicologia-nfse.md](psicologia-nfse.md).

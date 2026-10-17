@@ -109,7 +109,7 @@ class EnrollmentIn(Schema):
 
 class AccountIn(TeacherIn):
     password: str = Field(min_length=12, max_length=128)
-    role: Literal["director", "coordinator", "secretary", "teacher", "student", "guardian"]
+    role: Literal["director", "coordinator", "secretary", "teacher", "student", "guardian", "psychologist"]
     person_id: UUID | None = None
 
 
@@ -181,6 +181,8 @@ class TokenOut(Schema):
 
 
 class MembershipOut(Schema):
+    id: str
+    school_name: str
     institution_id: str
     institution_name: str
     school_id: str
